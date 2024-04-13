@@ -1,6 +1,10 @@
 import pyfastmask as pf
 import numpy as np
+import cv2
 import unittest
+import os
+import time
+
 
 class TestFastMask(unittest.TestCase):
     def test_mask(self):
@@ -12,7 +16,41 @@ class TestFastMask(unittest.TestCase):
         pf.writeMask("mask.bin", mask)
         r = pf.readMask("mask.bin").reshape(100, 100)
 
+        # remove mask file
+        os.remove("mask.bin")
+
         # Check the mask
         self.assertTrue(np.allclose(mask, r))
 
+    
+    def test_mask_correct(self):
+        mask = cv2.imread("realmask1ch.png", cv2.IMREAD_GRAYSCALE)
+        pf.writeMask("test.bin", mask)
+        r = pf.readMask("test.bin")
+
+        self.assertTrue(np.allclose(mask, r.reshape(mask.shape)))
+
+        # print size of file
+        print(f"Size of mask file: {os.path.getsize('test.bin')/1024:.2f} KB")
+
+        # remove mask file
+        os.remove("test.bin")
+
+
+
+    def test_read_speed(self):
+        mask = cv2.imread("realmask1ch.png", cv2.IMREAD_GRAYSCALE)
+        pf.writeMask("test.bin", mask)
+        
+        
+        # measure the time to read the mask and print it
+        start = time.time()
+        for i in range(1000):
+            r = pf.readMask("test.bin")
+        end = time.time()
+
+        # remove mask file
+        os.remove("test.bin")
+
+        print(f"Time to read mask: {(end-start):.2f} ms")
 
