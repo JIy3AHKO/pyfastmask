@@ -66,24 +66,22 @@ public:
 
     template <typename T>
     T get_integer(int bits) {
-        T value = 0;
-        int value_bits = 0;
+        // assume that bits is less than 64
+        if (current_bit_left < bits) {
+            T value = data[vector_position] & bitmasks[current_bit_left];
+            bits -= current_bit_left;
+            vector_position++;
+            value |= (data[vector_position] & bitmasks[bits]) << current_bit_left;
+            current_bit_left = 64 - bits;
+            data[vector_position] >>= bits;
+            return value;
 
-        while (value_bits < bits) {
-            if (current_bit_left == 0) {
-                vector_position++;
-                current_bit_left = 64;
-            }
-
-            int bits_to_read = std::min(current_bit_left, bits - value_bits);
-            value |= (data[vector_position] & bitmasks[bits_to_read]) << value_bits;
-            value_bits += bits_to_read;
-            data[vector_position] >>= bits_to_read;
-            current_bit_left -= bits_to_read;
+        } else {
+            T value = data[vector_position] & bitmasks[bits];
+            current_bit_left -= bits;
+            data[vector_position] >>= bits;
+            return value;
         }
-
-        return value;
-
     }
 
 };
