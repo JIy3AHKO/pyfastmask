@@ -88,7 +88,7 @@ std::vector<char> encode_mask(unsigned char * mask, size_t size) {
     std::vector<unsigned char> symbols;
     std::vector<int32_t> counts;
 
-    char prev = mask[0];
+    unsigned char prev = mask[0];
     int count = 1;
 
     for (size_t i = 1; i < size; i++) {
