@@ -80,6 +80,31 @@ public:
 
 };
 
+
+
+std::vector<unsigned char> generate_unique_symbols_map(std::vector<unsigned char>& symbols) {
+    // generate unique symbols map putting most frequent symbols first
+    std::map<unsigned char, int> symbol_to_count;
+    for (unsigned char symbol : symbols) {
+        symbol_to_count[symbol]++;
+    }
+
+    std::vector<std::pair<unsigned char, int>> symbol_count_pairs;
+    for (auto& pair : symbol_to_count) {
+        symbol_count_pairs.push_back(pair);
+    }
+
+    std::sort(symbol_count_pairs.begin(), symbol_count_pairs.end(), [](const std::pair<unsigned char, int>& a, const std::pair<unsigned char, int>& b) {
+        return a.second > b.second;
+    });
+
+    std::vector<unsigned char> unique_symbols;
+    for (auto& pair : symbol_count_pairs) {
+        unique_symbols.push_back(pair.first);
+    }
+
+    return unique_symbols;
+}
     
 
 
@@ -106,12 +131,7 @@ std::vector<char> encode_mask(unsigned char * mask, size_t size) {
     counts.push_back(count);
 
     // determine unique symbols and choose the best symbol bit width
-    std::vector<unsigned char> unique_symbols;
-    for (size_t i = 0; i < symbols.size(); i++) {
-        if (std::find(unique_symbols.begin(), unique_symbols.end(), symbols[i]) == unique_symbols.end()) {
-            unique_symbols.push_back(symbols[i]);
-        }
-    }
+    std::vector<unsigned char> unique_symbols = generate_unique_symbols_map(symbols);
 
     int symbol_bit_width = 1;
     while ((1 << symbol_bit_width) < unique_symbols.size()) {
@@ -198,18 +218,22 @@ std::vector<unsigned char> decode_mask(std::vector<char>& encoded) {
         unique_symbols.push_back(bits.get_integer<unsigned char>(8));
     }
 
-    std::vector<unsigned char> mask(mask_size);
+    std::vector<unsigned char> mask(mask_size, unique_symbols[0]);
 
     int mask_index = 0;
     for (int i = 0; i < intervals; i++) {
         int symbol = bits.get_integer<int>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
-
-
-        for (int j = 0; j < count; j++) {
-            mask[mask_index] = unique_symbols[symbol];
-            mask_index++;
+        
+        if (symbol != 0) {
+            for (int j = 0; j < count; j++) {
+                mask[mask_index] = unique_symbols[symbol];
+                mask_index++;
+            }
+        } else {
+            mask_index += count;
         }
+
     }
 
     return mask;
