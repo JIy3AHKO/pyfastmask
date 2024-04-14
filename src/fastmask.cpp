@@ -37,6 +37,10 @@ public:
         if (running_bits > 0) {
             data.push_back(running_byte);
         }
+        // pad the data with zeros to be aligned to 8 bytes
+        while (data.size() % 8 != 0) {
+            data.push_back(0);
+        }
         return data;
     }
 
@@ -45,16 +49,20 @@ public:
 
 class BitReader {
 private:
-    int current_bit_left = 8;
+    int current_bit_left = 64;
     int vector_position = 0;
+    std::array<unsigned long long, 64> bitmasks;
 
 public:
-    BitReader(std::vector<char>& data) : data(data) {
+    BitReader(std::vector<unsigned long long>& data) : data(data) {
         vector_position = 0;
-        current_bit_left = 8;
+        current_bit_left = 64;
+        for (int i = 0; i < 64; i++) {
+            bitmasks[i] = (1ULL << i) - 1ULL;
+        }
     }
 
-    std::vector<char> data;
+    std::vector<unsigned long long>& data;
 
     template <typename T>
     T get_integer(int bits) {
@@ -64,11 +72,11 @@ public:
         while (value_bits < bits) {
             if (current_bit_left == 0) {
                 vector_position++;
-                current_bit_left = 8;
+                current_bit_left = 64;
             }
 
             int bits_to_read = std::min(current_bit_left, bits - value_bits);
-            value |= (data[vector_position] & ((1 << bits_to_read) - 1)) << value_bits;
+            value |= (data[vector_position] & bitmasks[bits_to_read]) << value_bits;
             value_bits += bits_to_read;
             data[vector_position] >>= bits_to_read;
             current_bit_left -= bits_to_read;
@@ -191,7 +199,7 @@ std::vector<char> encode_mask(unsigned char * mask, size_t size) {
 }
 
 
-std::vector<unsigned char> decode_mask(std::vector<char>& encoded) {
+std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded) {
     BitReader bits(encoded);
 
     # ifdef DEBUG
@@ -224,6 +232,8 @@ std::vector<unsigned char> decode_mask(std::vector<char>& encoded) {
     for (int i = 0; i < intervals; i++) {
         int symbol = bits.get_integer<int>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
+
+        // std::cerr << "symbol: " << symbol << " count: " << count << std::endl;
         
         if (symbol != 0) {
             for (int j = 0; j < count; j++) {
@@ -258,11 +268,22 @@ void writeMask(const std::string& filename, py::buffer mask) {
 
 
 py::array_t<unsigned char> readMask(const std::string& filename) {
-    std::ifstream file(filename, std::ios::binary);
-    std::vector<char> encoded((std::istreambuf_iterator<char >(file)), std::istreambuf_iterator<char>());
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::vector<char> buffer(size);
+
+    file.read(buffer.data(), size);
     file.close();
 
-    std::vector<unsigned char> mask = decode_mask(encoded);
+    std::vector<unsigned long long> data(
+            reinterpret_cast<unsigned long long*>(buffer.data()),
+            reinterpret_cast<unsigned long long*>(buffer.data()) + size / sizeof(unsigned long long)
+    );
+
+    std::vector<unsigned char> mask = decode_mask(data);
 
     return py::array_t<unsigned char>(mask.size(), mask.data());
 }
