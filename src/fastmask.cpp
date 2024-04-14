@@ -198,11 +198,6 @@ std::vector<unsigned char> decode_mask(std::vector<char>& encoded) {
         unique_symbols.push_back(bits.get_integer<unsigned char>(8));
     }
 
-    std::map<int, unsigned char> index_to_symbol;
-    for (size_t i = 0; i < unique_symbols.size(); i++) {
-        index_to_symbol[i] = unique_symbols[i];
-    }
-
     std::vector<unsigned char> mask(mask_size);
 
     int mask_index = 0;
@@ -210,8 +205,9 @@ std::vector<unsigned char> decode_mask(std::vector<char>& encoded) {
         int symbol = bits.get_integer<int>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
 
+
         for (int j = 0; j < count; j++) {
-            mask[mask_index] = index_to_symbol[symbol];
+            mask[mask_index] = unique_symbols[symbol];
             mask_index++;
         }
     }
