@@ -219,15 +219,15 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded)
 
     # endif
 
-    std::vector<unsigned char> unique_symbols;
-    for (int i = 0; i < unique_symbols_count; i++) {
-        unique_symbols.push_back(bits.get_integer<unsigned char>(8));
+    std::vector<unsigned char> unique_symbols(unique_symbols_count);
+    for (int i = 0; i < unique_symbols_count; ++i) {
+        unique_symbols[i] = bits.get_integer<unsigned char>(8);
     }
 
     std::vector<unsigned char> mask(mask_size, unique_symbols[0]);
 
     int mask_index = 0;
-    for (int i = 0; i < intervals; i++) {
+    for (int i = 0; i < intervals; ++i) {
         int symbol = bits.get_integer<int>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
 
