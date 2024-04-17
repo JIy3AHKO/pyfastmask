@@ -8,12 +8,14 @@ import glob
 import qoi
 
 
-def test_speed(path, save_fn, read_fn, ext, n_iter=1000):
+def test_speed_and_size(path, save_fn, read_fn, ext, n_iter=1000):
     # measure the time to read the mask  per iteration in ms
 
     mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     mask_path = f"test.{ext}"
     save_fn(mask_path, mask)
+
+    size = os.path.getsize(mask_path)
 
     start = time.time()
     for i in range(n_iter):
@@ -22,7 +24,7 @@ def test_speed(path, save_fn, read_fn, ext, n_iter=1000):
 
     os.remove(mask_path)
 
-    return (end-start)/n_iter*1000
+    return (end-start)/n_iter*1000, size
 
 class TestFastMask(unittest.TestCase):
     def test_mask(self):
@@ -86,5 +88,6 @@ class TestFastMask(unittest.TestCase):
         for img in test_images:
             print(f"Image: {img}")
             for name, wr, re, ext in methods:
-                print(f"Time per iteration for {name}: {test_speed(img, wr, re, ext):.2f} ms")
+                iter_time, size = test_speed_and_size(img, wr, re, ext)
+                print(f"Time per iteration for {name}: {iter_time:.2f} ms; Size: {size} Byte")
 
