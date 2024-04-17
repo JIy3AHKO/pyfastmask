@@ -115,9 +115,16 @@ std::vector<unsigned char> generate_unique_symbols_map(std::vector<unsigned char
 
 
 
-std::vector<char> encode_mask(unsigned char * mask, size_t size) {
+std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
     std::vector<unsigned char> symbols;
     std::vector<int32_t> counts;
+
+    // assert that the mask is 2D
+    if (shape.size() != 2) {
+        throw std::invalid_argument("Mask must be 2D");
+    }
+
+    size_t size = shape[0] * shape[1];
 
     unsigned char prev = mask[0];
     int count = 1;
@@ -165,7 +172,8 @@ std::vector<char> encode_mask(unsigned char * mask, size_t size) {
     bits.add_integer(count_bit_width, 8);
     bits.add_integer(unique_symbols.size(), 32);
     bits.add_integer(symbols.size(), 32);
-    bits.add_integer(size, 32);
+    bits.add_integer(shape[0], 32);
+    bits.add_integer(shape[1], 32);
 
     // create mapping from symbol to index and store it in the encoded mask
     std::map<unsigned char, int> symbol_to_index;
@@ -197,7 +205,7 @@ std::vector<char> encode_mask(unsigned char * mask, size_t size) {
 }
 
 
-std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded) {
+std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded, int& mask_height, int& mask_width) {
     BitReader bits(encoded);
 
     # ifdef DEBUG
@@ -208,7 +216,9 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded)
     int count_bit_width = bits.get_integer<int>(8);
     int unique_symbols_count = bits.get_integer<int>(32);
     int intervals = bits.get_integer<int>(32);
-    int mask_size = bits.get_integer<int>(32);
+    mask_height = bits.get_integer<int>(32);
+    mask_width = bits.get_integer<int>(32);
+    int mask_size = mask_height * mask_width;
     
     # ifdef DEBUG
 
@@ -230,8 +240,6 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded)
     for (int i = 0; i < intervals; ++i) {
         int symbol = bits.get_integer<int>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
-
-        // std::cerr << "symbol: " << symbol << " count: " << count << std::endl;
         
         if (symbol != 0) {
             for (int j = 0; j < count; j++) {
@@ -255,9 +263,8 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded)
 void writeMask(const std::string& filename, py::buffer mask) {
     py::buffer_info info = mask.request();
     unsigned char* ptr = static_cast<unsigned char*>(info.ptr);
-    size_t size = info.size;
 
-    std::vector<char> encoded = encode_mask(ptr, size);
+    std::vector<char> encoded = encode_mask(ptr, info.shape);
 
     std::ofstream file(filename, std::ios::binary);
     file.write(encoded.data(), encoded.size());
@@ -281,9 +288,10 @@ py::array_t<unsigned char> readMask(const std::string& filename) {
             reinterpret_cast<unsigned long long*>(buffer.data()) + size / sizeof(unsigned long long)
     );
 
-    std::vector<unsigned char> mask = decode_mask(data);
+    int mask_height, mask_width;
+    std::vector<unsigned char> mask = decode_mask(data, mask_height, mask_width);
 
-    return py::array_t<unsigned char>(mask.size(), mask.data());
+    return py::array_t<unsigned char>({mask_height, mask_width}, mask.data());
 }
 
 
