@@ -4,7 +4,25 @@ import cv2
 import unittest
 import os
 import time
+import glob
+import qoi
 
+
+def test_speed(path, save_fn, read_fn, ext, n_iter=1000):
+    # measure the time to read the mask  per iteration in ms
+
+    mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    mask_path = f"test.{ext}"
+    save_fn(mask_path, mask)
+
+    start = time.time()
+    for i in range(n_iter):
+        r = read_fn(mask_path)
+    end = time.time()
+
+    os.remove(mask_path)
+
+    return (end-start)/n_iter*1000
 
 class TestFastMask(unittest.TestCase):
     def test_mask(self):
@@ -13,8 +31,8 @@ class TestFastMask(unittest.TestCase):
         mask[20:80, 20:80] = 1
 
         # Create a FastMask object
-        pf.writeMask("mask.bin", mask)
-        r = pf.readMask("mask.bin")
+        pf.write("mask.bin", mask)
+        r = pf.read("mask.bin")
 
         # remove mask file
         os.remove("mask.bin")
@@ -26,8 +44,8 @@ class TestFastMask(unittest.TestCase):
         mask = np.zeros((100, 224), dtype=np.int8)
         mask[20:80, 20:200] = 1
 
-        pf.writeMask("mask.bin", mask)
-        r = pf.readMask("mask.bin")
+        pf.write("mask.bin", mask)
+        r = pf.read("mask.bin")
 
         # remove mask file
         os.remove("mask.bin")
@@ -38,9 +56,9 @@ class TestFastMask(unittest.TestCase):
 
     
     def test_mask_correct(self):
-        mask = cv2.imread("realmask1ch.png", cv2.IMREAD_GRAYSCALE)
-        pf.writeMask("test.bin", mask)
-        r = pf.readMask("test.bin")
+        mask = cv2.imread("test_imgs/a.png", cv2.IMREAD_GRAYSCALE)
+        pf.write("test.bin", mask)
+        r = pf.read("test.bin")
 
         self.assertTrue(np.allclose(mask, r))
 
@@ -53,18 +71,20 @@ class TestFastMask(unittest.TestCase):
 
 
     def test_read_speed(self):
-        mask = cv2.imread("realmask1ch.png", cv2.IMREAD_GRAYSCALE)
-        pf.writeMask("test.bin", mask)
-        
-        
-        # measure the time to read the mask and print it
-        start = time.time()
-        for i in range(1000):
-            r = pf.readMask("test.bin")
-        end = time.time()
+        test_images = glob.glob("test_imgs/*.png")
 
-        # remove mask file
-        os.remove("test.bin")
+        def qoi_write(path, mask):
+            mask = np.concatenate([mask[..., None], mask[..., None], mask[..., None]], axis=-1)
+            qoi.write(path, mask)
 
-        print(f"Time to read mask: {(end-start):.2f} ms")
+        methods = [
+            ("pfm", pf.write, pf.read, 'pfm'),
+            ("cv2", cv2.imwrite, cv2.imread, 'png'),
+            ("qoi", qoi_write, qoi.read, 'qoi')
+        ]
+
+        for img in test_images:
+            print(f"Image: {img}")
+            for name, wr, re, ext in methods:
+                print(f"Time per iteration for {name}: {test_speed(img, wr, re, ext):.2f} ms")
 
