@@ -45,15 +45,15 @@ public:
 
 class BitReader {
 private:
-    int current_bit_left = 64;
-    int vector_position = 0;
+    char current_bit_left = 64;
+    long vector_position = 0;
     std::array<unsigned long long, 64> bitmasks;
 
 public:
     BitReader(std::vector<unsigned long long>& data) : data(data) {
         vector_position = 0;
         current_bit_left = 64;
-        for (int i = 0; i < 64; i++) {
+        for (char i = 0; i < 64; i++) {
             bitmasks[i] = (1ULL << i) - 1ULL;
         }
     }
@@ -61,7 +61,7 @@ public:
     std::vector<unsigned long long>& data;
 
     template <typename T>
-    T get_integer(int bits) {
+    T get_integer(char bits) {
         // assume that bits is less than 64
         if (current_bit_left < bits) {
             T value = data[vector_position] & bitmasks[current_bit_left];
