@@ -33,10 +33,6 @@ public:
         if (running_bits > 0) {
             data.push_back(running_byte);
         }
-        // pad the data with zeros to be aligned to 8 bytes
-        while (data.size() % 8 != 0) {
-            data.push_back(0);
-        }
         return data;
     }
 
@@ -191,8 +187,8 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded, int& mask_height, int& mask_width) {
     BitReader bits(encoded);
 
-    char symbol_bit_width = bits.get_integer<int>(8);
-    char count_bit_width = bits.get_integer<int>(8);
+    unsigned char symbol_bit_width = bits.get_integer<unsigned char>(8);
+    unsigned char count_bit_width = bits.get_integer<unsigned char>(8);
     int unique_symbols_count = bits.get_integer<int>(32);
     int intervals = bits.get_integer<int>(32);
     mask_height = bits.get_integer<int>(32);
@@ -208,7 +204,7 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded,
     std::vector<unsigned char> mask(mask_size, unique_symbols[0]);
     int mask_index = 0;
     for (int i = 0; i < intervals; ++i) {
-        int symbol = bits.get_integer<int>(symbol_bit_width);
+        unsigned char symbol = bits.get_integer<unsigned char>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
                 
         if (symbol != 0) {

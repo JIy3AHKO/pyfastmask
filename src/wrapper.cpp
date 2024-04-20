@@ -23,16 +23,18 @@ py::array_t<unsigned char> readMask(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
     std::streamsize size = file.tellg();
+    auto padded_size = size + (8 - (size % 8));
     file.seekg(0, std::ios::beg);
 
-    std::vector<char> buffer(size);
+    std::vector<char> buffer(padded_size);
 
     file.read(buffer.data(), size);
     file.close();
 
+
     std::vector<unsigned long long> data(
             reinterpret_cast<unsigned long long*>(buffer.data()),
-            reinterpret_cast<unsigned long long*>(buffer.data()) + size / sizeof(unsigned long long)
+            reinterpret_cast<unsigned long long*>(buffer.data()) + padded_size / sizeof(unsigned long long)
     );
 
     int mask_height, mask_width;
