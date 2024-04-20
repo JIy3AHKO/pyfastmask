@@ -1,11 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include "pybind11/numpy.h"
-
-
-namespace py = pybind11;
+#include <vector>
+#include <map>
 
 
 class BitWriter {
@@ -117,7 +113,7 @@ std::vector<unsigned char> generate_unique_symbols_map(std::vector<unsigned char
 
 std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
     std::vector<unsigned char> symbols;
-    std::vector<int32_t> counts;
+    std::vector<uint32_t> counts;
 
     // assert that the mask is 2D
     if (shape.size() != 2) {
@@ -127,7 +123,7 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
     size_t size = shape[0] * shape[1];
 
     unsigned char prev = mask[0];
-    int count = 1;
+    uint32_t count = 1;
 
     for (size_t i = 1; i < size; i++) {
         if (mask[i] == prev) {
@@ -147,26 +143,20 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
     std::vector<unsigned char> unique_symbols = generate_unique_symbols_map(symbols);
 
     int symbol_bit_width = 1;
-    while ((1 << symbol_bit_width) < unique_symbols.size()) {
+    while ((1ULL << symbol_bit_width) < unique_symbols.size()) {
         symbol_bit_width++;
     }
 
     // determine the best count bit width
     int count_bit_width = 1;
-    int32_t max_count = *std::max_element(counts.begin(), counts.end());
+    uint32_t max_count = *std::max_element(counts.begin(), counts.end());
 
-    while ((1 << count_bit_width) < max_count) {
+    while ((1ULL << count_bit_width) <= max_count) {
         count_bit_width++;
     }
 
     // encode the mask
     BitWriter bits;
-
-    # ifdef DEBUG
-    std::cerr << "symbol_bit_width: " << symbol_bit_width << std::endl;
-    std::cerr << "count_bit_width: " << count_bit_width << std::endl;
-
-    # endif
 
     bits.add_integer(symbol_bit_width, 8);
     bits.add_integer(count_bit_width, 8);
@@ -189,17 +179,10 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 
         bits.add_integer(symbol, symbol_bit_width);
         bits.add_integer(count, count_bit_width);
-
     }
 
     std::vector<unsigned char> encoded_data = bits.get_data();
     std::vector<char> encoded(encoded_data.begin(), encoded_data.end());
-
-    # ifdef DEBUG
-    
-    std::cerr << "encoded size: " << encoded.size() << std::endl;
-
-    # endif
 
     return encoded;
 }
@@ -207,10 +190,6 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 
 std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded, int& mask_height, int& mask_width) {
     BitReader bits(encoded);
-
-    # ifdef DEBUG
-    std::cerr << "Reading mask..." << std::endl;
-    # endif
 
     int symbol_bit_width = bits.get_integer<int>(8);
     int count_bit_width = bits.get_integer<int>(8);
@@ -220,14 +199,6 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded,
     mask_width = bits.get_integer<int>(32);
     int mask_size = mask_height * mask_width;
     
-    # ifdef DEBUG
-
-    std::cerr << "symbol_bit_width: " << symbol_bit_width << std::endl;
-    std::cerr << "count_bit_width: " << count_bit_width << std::endl;
-    std::cerr << "unique_symbols_count: " << unique_symbols_count << std::endl;
-    std::cerr << "intervals: " << intervals << std::endl;
-
-    # endif
 
     std::vector<unsigned char> unique_symbols(unique_symbols_count);
     for (int i = 0; i < unique_symbols_count; ++i) {
@@ -235,12 +206,11 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded,
     }
 
     std::vector<unsigned char> mask(mask_size, unique_symbols[0]);
-
     int mask_index = 0;
     for (int i = 0; i < intervals; ++i) {
         int symbol = bits.get_integer<int>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
-        
+                
         if (symbol != 0) {
             for (int j = 0; j < count; j++) {
                 mask[mask_index] = unique_symbols[symbol];
@@ -254,50 +224,3 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded,
 
     return mask;
 }
-
-
-
-
-
-
-void writeMask(const std::string& filename, py::buffer mask) {
-    py::buffer_info info = mask.request();
-    unsigned char* ptr = static_cast<unsigned char*>(info.ptr);
-
-    std::vector<char> encoded = encode_mask(ptr, info.shape);
-
-    std::ofstream file(filename, std::ios::binary);
-    file.write(encoded.data(), encoded.size());
-    file.close();
-}
-
-
-py::array_t<unsigned char> readMask(const std::string& filename) {
-    std::ifstream file(filename, std::ios::binary | std::ios::ate);
-
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    std::vector<char> buffer(size);
-
-    file.read(buffer.data(), size);
-    file.close();
-
-    std::vector<unsigned long long> data(
-            reinterpret_cast<unsigned long long*>(buffer.data()),
-            reinterpret_cast<unsigned long long*>(buffer.data()) + size / sizeof(unsigned long long)
-    );
-
-    int mask_height, mask_width;
-    std::vector<unsigned char> mask = decode_mask(data, mask_height, mask_width);
-
-    return py::array_t<unsigned char>({mask_height, mask_width}, mask.data());
-}
-
-
-PYBIND11_MODULE(pyfastmask, m) {
-    m.doc() = "Fast mask module";
-    m.def("write", &writeMask, "Write mask to file");
-    m.def("read", &readMask, "Read mask from file", py::return_value_policy::move);
-}
-
