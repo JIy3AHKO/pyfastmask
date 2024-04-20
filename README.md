@@ -32,13 +32,11 @@ Benchmark
 
 Reading speed (ms)
 
-| Image | pfm | opencv png  | qoi |
-|-------|-----|-------------|-----|
-| 1     | 0.1 | 0.2         | 0.3 |
-| 2     | 0.1 | 0.2         | 0.3 |
-| 3     | 0.1 | 0.2         | 0.3 |
-| 4     | 0.1 | 0.2         | 0.3 |
-| 5     | 0.1 | 0.2         | 0.3 |
+|   Image   |  pfm  |   cv2  |   qoi  |
+|-----------|-------|--------|--------|
+|bin_circles|0.15 ms| 3.61 ms| 0.66 ms|
+|   noise   |3.85 ms|24.77 ms|11.03 ms|
+|  realmask |0.26 ms| 7.07 ms| 1.28 ms|
 
 Mask size (kB)
 
@@ -51,3 +49,6 @@ Mask size (kB)
 | 5     | 0.1 | 0.2         | 0.3 |
 
 All measurements are the average of 10 runs.
+
+
+

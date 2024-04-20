@@ -191,8 +191,8 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded, int& mask_height, int& mask_width) {
     BitReader bits(encoded);
 
-    int symbol_bit_width = bits.get_integer<int>(8);
-    int count_bit_width = bits.get_integer<int>(8);
+    char symbol_bit_width = bits.get_integer<int>(8);
+    char count_bit_width = bits.get_integer<int>(8);
     int unique_symbols_count = bits.get_integer<int>(32);
     int intervals = bits.get_integer<int>(32);
     mask_height = bits.get_integer<int>(32);
