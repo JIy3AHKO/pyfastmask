@@ -202,20 +202,16 @@ std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded,
     }
 
     std::vector<unsigned char> mask(mask_size, unique_symbols[0]);
-    int mask_index = 0;
+    auto mask_ptr = mask.data();
+    
     for (int i = 0; i < intervals; ++i) {
-        unsigned char symbol = bits.get_integer<unsigned char>(symbol_bit_width);
+        unsigned char symbol_id = bits.get_integer<unsigned char>(symbol_bit_width);
         int count = bits.get_integer<int>(count_bit_width);
                 
-        if (symbol != 0) {
-            for (int j = 0; j < count; j++) {
-                mask[mask_index] = unique_symbols[symbol];
-                mask_index++;
-            }
-        } else {
-            mask_index += count;
+        if (symbol_id != 0) {
+            memset(mask_ptr, unique_symbols[symbol_id], count);
         }
-
+        mask_ptr += count;
     }
 
     return mask;
