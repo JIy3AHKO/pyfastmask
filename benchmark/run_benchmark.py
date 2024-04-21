@@ -41,8 +41,19 @@ class CV2Method(Method):
         super().__init__("cv2", "png")
 
     def save(self, path: str, mask: np.ndarray):
-        mask = np.concatenate([mask[..., None], mask[..., None], mask[..., None]], axis=-1)
         cv2.imwrite(path, mask)
+
+    def read(self, path: str) -> np.ndarray:
+        mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        return mask
+
+
+class CV2MethodCompression9(Method):
+    def __init__(self):
+        super().__init__("cv2_cmp9", "png")
+
+    def save(self, path: str, mask: np.ndarray):
+        cv2.imwrite(path, mask, [cv2.IMWRITE_PNG_COMPRESSION, 9])
 
     def read(self, path: str) -> np.ndarray:
         mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
@@ -91,10 +102,13 @@ def read_csv(path: str) -> List[List[str]]:
 def test_read_speed(images_csv: str = "test_images.csv", n_iterations: int = 100):
     test_images = read_csv(images_csv)
 
-    methods = [PFMMethod(), CV2Method(), QOIMethod()]
+    methods = [PFMMethod(), CV2MethodCompression9(), CV2Method(), QOIMethod()]
 
     speed_table = []
     size_table = []
+
+    method_speed = {}
+    method_size = {}
 
     for img_name, img_path in test_images:
         print(f"Image: {img_name}")
@@ -104,8 +118,21 @@ def test_read_speed(images_csv: str = "test_images.csv", n_iterations: int = 100
             iter_time, size = test_speed_and_size(img_path, m, n_iter=n_iterations)
             row_speed[m.name] = f"{iter_time:.2f} ms"
             row_size[m.name] = f"{size} Byte"
+            method_speed[m.name] = method_speed.get(m.name, 0) + iter_time
+            method_size[m.name] = method_size.get(m.name, 0) + size
         speed_table.append(row_speed)
         size_table.append(row_size)
+
+    # add average row
+    row_speed = {"Image": "Average"}
+    row_size = {"Image": "Average"}
+
+    for m in methods:
+        row_speed[m.name] = f"{method_speed[m.name]/len(test_images):.2f} ms"
+        row_size[m.name] = f"{method_size[m.name]/len(test_images):.0f} Byte"
+
+    speed_table.append(row_speed)
+    size_table.append(row_size)
 
     markdown = markdown_table(speed_table).get_markdown()
     print(markdown)
