@@ -19,7 +19,7 @@ For image reading and writing, use the `read` and `write` functions:
 import pyfastmask as pf
 import numpy as np
 
-img = np.random.randint((100, 100), dtype=np.uint8)
+img = np.random.randint(0, 256, (100, 100), dtype=np.uint8)
 
 pf.write('mask.pfm', img)
 img2 = pf.read('mask.pfm')
