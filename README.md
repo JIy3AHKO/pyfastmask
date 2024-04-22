@@ -8,6 +8,7 @@ Installation
 
 ```bash
 git clone git@github.com:JIy3AHKO/pyfastmask.git
+cd pyfastmask
 pip install .
 ```
 
