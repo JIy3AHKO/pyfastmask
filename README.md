@@ -34,6 +34,7 @@ Benchmark
 You can run benchmark localy with:
 
 ```bash
+pip install -r test-requirements.txt
 python benchmark/run_benchmark.py
 ```
 
@@ -51,6 +52,7 @@ Mask size (kB)
 Tests
 ---------
 ```bash
+pip install -r test-requirements.txt
 python -m unittest discover tests/
 ```
 

@@ -1,7 +1,9 @@
-import pyfastmask as pf
-import numpy as np
 import unittest
 import os
+
+import numpy as np
+
+import pyfastmask as pf
 
 
 class TestFastMask(unittest.TestCase):

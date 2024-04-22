@@ -1,0 +1,4 @@
+opencv-python
+numpy
+qoi
+py_markdown_table
