@@ -7,7 +7,8 @@ Installation
 ------------
 
 ```bash
-pip install pyfastmask
+git clone git@github.com:JIy3AHKO/pyfastmask.git
+pip install .
 ```
 
 Usage
@@ -29,6 +30,11 @@ assert np.all(img == img2)
 
 Benchmark
 ---------
+You can run benchmark localy with:
+
+```bash
+python benchmark/run_benchmark.py
+```
 
 Reading speed (ms)
 
@@ -39,16 +45,12 @@ Reading speed (ms)
 |  realmask |0.26 ms| 7.07 ms| 1.28 ms|
 
 Mask size (kB)
+<TBD>
 
-| Image | pfm | opencv png  | qoi |
-|-------|-----|-------------|-----|
-| 1     | 0.1 | 0.2         | 0.3 |
-| 2     | 0.1 | 0.2         | 0.3 |
-| 3     | 0.1 | 0.2         | 0.3 |
-| 4     | 0.1 | 0.2         | 0.3 |
-| 5     | 0.1 | 0.2         | 0.3 |
-
-All measurements are the average of 10 runs.
-
+Tests
+---------
+```bash
+python -m unittest discover tests/
+```
 
 
