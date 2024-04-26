@@ -12,6 +12,8 @@ setup(
     name="pyfastmask",
     version=__version__,
     author="Andrei Luzan",
+    url="https://github.com/JIy3AHKO/pyfastmask",
+    description="Fast low color mask read/write",
     cmdclass={"build_ext": build_ext},
     ext_modules=ext_modules,
     zip_safe=False,

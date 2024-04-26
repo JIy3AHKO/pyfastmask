@@ -6,6 +6,15 @@
 #include <cstring>
 
 
+const unsigned char VERSION_BYTE = 0x01;
+const unsigned int MAGIC_BYTE = (
+      ((unsigned int)'p') << 24 
+    | ((unsigned int)'f') << 16 
+    | ((unsigned int)'m') <<  8 
+    | ((unsigned int)'f')
+);
+
+
 class BitWriter {
 private:
     char running_byte = 0; // byte that is being built
@@ -156,6 +165,8 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
     // encode the mask
     BitWriter bits;
 
+    bits.add_integer(MAGIC_BYTE, 32);
+    bits.add_integer(VERSION_BYTE, 8);
     bits.add_integer(symbol_bit_width, 8);
     bits.add_integer(count_bit_width, 8);
     bits.add_integer(unique_symbols.size(), 32);
@@ -188,6 +199,16 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 
 std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded, int& mask_height, int& mask_width) {
     BitReader bits(encoded);
+
+    unsigned int magic = bits.get_integer<unsigned int>(32);
+    if (magic != MAGIC_BYTE) {
+        throw std::invalid_argument("Invalid magic byte");
+    }
+
+    unsigned char version = bits.get_integer<unsigned char>(8);
+    if (version != VERSION_BYTE) {
+        throw std::invalid_argument("Invalid version byte");
+    }
 
     unsigned char symbol_bit_width = bits.get_integer<unsigned char>(8);
     unsigned char count_bit_width = bits.get_integer<unsigned char>(8);
