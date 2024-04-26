@@ -30,6 +30,18 @@ class TestFastMask(unittest.TestCase):
         mask = np.arange(256).reshape(16, 16).astype(np.uint8)
         self.assert_image_same_after_read_write(mask, 'arange')
 
+    def test_simple_arange(self):
+        mask = np.array([
+            [0, 1],
+            [2, 3]
+        ], dtype=np.uint8)
+        self.assert_image_same_after_read_write(mask, 'square4x4')
+
+    def test_all_zeros(self):
+        mask = np.zeros((100, 100), dtype=np.uint8)
+        self.assert_image_same_after_read_write(mask, 'zeros')
+
+
     def test_noise_bin(self):
         mask = np.random.randint(0, 2, (100, 100), dtype=np.uint8)
         self.assert_image_same_after_read_write(mask, 'noise')

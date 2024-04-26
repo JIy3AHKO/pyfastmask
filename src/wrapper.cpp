@@ -32,16 +32,16 @@ py::array_t<unsigned char> readMask(const std::string& filename) {
     file.close();
     
     unsigned long long* data = reinterpret_cast<unsigned long long*>(buffer);
-    unsigned char current_bit_left = sizeof(unsigned long long) * 8;
+    unsigned char current_bit_left = 64;
 
     Header header = read_header(data, current_bit_left);
 
     if (header.magic != MAGIC_BYTE) {
-        throw std::runtime_error("Invalid magic byte");
+        throw std::invalid_argument("Invalid magic byte");
     }
 
     if (header.version != VERSION_BYTE) {
-        throw std::runtime_error("Invalid version byte");
+        throw std::invalid_argument("Invalid version byte");
     }
 
     unsigned char mask[header.mask_height * header.mask_width];

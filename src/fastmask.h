@@ -50,23 +50,23 @@ struct Header {
     unsigned char version;
     unsigned char symbol_bit_width;
     unsigned char count_bit_width;
-    int unique_symbols_count;
-    int intervals;
-    int mask_height;
-    int mask_width;
+    unsigned int unique_symbols_count;
+    unsigned int intervals;
+    unsigned int mask_height;
+    unsigned int mask_width;
 };
 
 
-Header read_header(unsigned long long*& data, unsigned char& current_bit_left) {
+inline Header read_header(unsigned long long*& data, unsigned char& current_bit_left) {
     Header header;
     header.magic = get_integer<unsigned int>(32, data, current_bit_left);
     header.version = get_integer<unsigned char>(8, data, current_bit_left);
     header.symbol_bit_width = get_integer<unsigned char>(8, data, current_bit_left);
     header.count_bit_width = get_integer<unsigned char>(8, data, current_bit_left);
-    header.unique_symbols_count = get_integer<int>(32, data, current_bit_left);
-    header.intervals = get_integer<int>(32, data, current_bit_left);
-    header.mask_height = get_integer<int>(32, data, current_bit_left);
-    header.mask_width = get_integer<int>(32, data, current_bit_left);
+    header.unique_symbols_count = get_integer<unsigned int>(32, data, current_bit_left);
+    header.intervals = get_integer<unsigned int>(32, data, current_bit_left);
+    header.mask_height = get_integer<unsigned int>(32, data, current_bit_left);
+    header.mask_width = get_integer<unsigned int>(32, data, current_bit_left);
 
     return header;
 }
@@ -225,17 +225,20 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 }
 
 
-void decode_mask(unsigned long long*& data, Header& header, unsigned char& current_bit_left, unsigned char* mask) {
+inline void decode_mask(unsigned long long*& data, const Header& header, unsigned char& current_bit_left, unsigned char* mask) {
    
     unsigned char unique_symbols[header.unique_symbols_count];
+
     for (int i = 0; i < header.unique_symbols_count; ++i) {
         unique_symbols[i] = get_integer<unsigned char>(8, data, current_bit_left);
     }
     
+    memset(mask, unique_symbols[0], header.mask_height * header.mask_width);
+
     for (int i = 0; i < header.intervals; ++i) {
         unsigned char symbol_id = get_integer<unsigned char>(header.symbol_bit_width, data, current_bit_left);
-        int count = get_integer<int>(header.count_bit_width, data, current_bit_left);
-                
+        size_t count = get_integer<size_t>(header.count_bit_width, data, current_bit_left);
+
         if (symbol_id != 0) {
             memset(mask, unique_symbols[symbol_id], count);
         }
