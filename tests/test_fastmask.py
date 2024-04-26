@@ -30,7 +30,6 @@ class TestFastMask(unittest.TestCase):
         mask = np.arange(256).reshape(16, 16).astype(np.uint8)
         self.assert_image_same_after_read_write(mask, 'arange')
 
-
     def test_noise_bin(self):
         mask = np.random.randint(0, 2, (100, 100), dtype=np.uint8)
         self.assert_image_same_after_read_write(mask, 'noise')

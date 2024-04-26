@@ -46,7 +46,7 @@ py::array_t<unsigned char> readMask(const std::string& filename) {
 
 PYBIND11_MODULE(pyfastmask, m) {
     m.doc() = "Fast mask module";
-    m.def("write", &writeMask, "Write mask to file");
-    m.def("read", &readMask, "Read mask from file", py::return_value_policy::move);
+    m.def("write", &writeMask, "Write mask to file", py::arg("filename"), py::arg("mask"));
+    m.def("read", &readMask, "Read mask from file", py::arg("filename"), py::return_value_policy::move);
 }
 

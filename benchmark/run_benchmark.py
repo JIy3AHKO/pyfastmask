@@ -1,14 +1,37 @@
+import argparse
 import abc
 import os
 import time
-from typing import List
+from typing import List, Dict, Union
 
-import qoi
 import cv2
 import numpy as np
-from py_markdown_table.markdown_table import markdown_table
+import qoi
+
 
 import pyfastmask as pf
+
+
+def draw_md_table(data: List[Dict[str, Union[str, float]]], units: str) -> str:
+    headers = data[0].keys()
+    table = "| " + " | ".join(headers) + " |\n"
+    table += "| " + " | ".join(["---" for _ in headers]) + " |\n"
+
+    for row in data:
+        table += "| "
+        lowest = min([v for k, v in row.items() if k != "Image"])
+
+        for k, v in row.items():
+            if k == "Image":
+                table += f"{v} | "
+            else:
+                if v == lowest:
+                    table += f"**{v:.2f} {units}** | "
+                else:
+                    table += f"{v:.2f} {units} | "
+        table += "\n"
+
+    return table
 
 
 class Method(abc.ABC):
@@ -36,9 +59,9 @@ class PFMMethod(Method):
         return pf.read(path)
 
 
-class CV2Method(Method):
+class CV2PngMethod(Method):
     def __init__(self):
-        super().__init__("cv2", "png")
+        super().__init__("cv2_png", "png")
 
     def save(self, path: str, mask: np.ndarray):
         cv2.imwrite(path, mask)
@@ -50,10 +73,22 @@ class CV2Method(Method):
 
 class CV2MethodCompression9(Method):
     def __init__(self):
-        super().__init__("cv2_cmp9", "png")
+        super().__init__("cv2_png_cmp9", "png")
 
     def save(self, path: str, mask: np.ndarray):
         cv2.imwrite(path, mask, [cv2.IMWRITE_PNG_COMPRESSION, 9])
+
+    def read(self, path: str) -> np.ndarray:
+        mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        return mask
+
+
+class CV2BmpMethod(Method):
+    def __init__(self):
+        super().__init__("cv2_bmp", "bmp")
+
+    def save(self, path: str, mask: np.ndarray):
+        cv2.imwrite(path, mask)
 
     def read(self, path: str) -> np.ndarray:
         mask = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
@@ -67,7 +102,7 @@ class QOIMethod(Method):
     def save(self, path: str, mask: np.ndarray):
         # we need to save the mask as a color image, since qoi does not support grayscale images
         mask = mask[..., np.newaxis]
-        mask = np.concatenate([mask, mask, mask], axis=-1)
+        mask = np.concatenate([mask, np.zeros_like(mask), np.zeros_like(mask)], axis=-1)
         qoi.write(path, mask)
 
     def read(self, path: str) -> np.ndarray:
@@ -99,46 +134,77 @@ def read_csv(path: str) -> List[List[str]]:
         return [line.strip().split(',') for line in f.readlines()]
 
 
-def test_read_speed(images_csv: str = "test_images.csv", n_iterations: int = 100):
-    test_images = read_csv(images_csv)
+def generate_test_images_csv(images_dir: str) -> List[List[str]]:
+    res = []
+    for img_name in os.listdir(images_dir):
+        bname = os.path.basename(img_name)
+        bname, ext = os.path.splitext(img_name)
+        res.append([bname, os.path.join(images_dir, img_name)])
 
-    methods = [PFMMethod(), CV2MethodCompression9(), CV2Method(), QOIMethod()]
+    return res
+
+
+def aggregate_results(
+        data: List[Dict[str, float]],
+        agg_name: str,
+        methods: List[Method],
+        fn,
+) -> Dict[str, str]:
+    agg_row = {"Image": agg_name}
+    for m in methods:
+        agg_row[m.name] = fn(data, m.name)
+
+    return agg_row
+
+
+def get_average(data: List[Dict[str, float]], method_name: str) -> float:
+    return sum([row[method_name] for row in data]) / len(data)
+
+
+def get_median(data: List[Dict[str, float]], method_name: str) -> float:
+    return np.median([row[method_name] for row in data])
+
+
+def test_read_speed(images_dir: str, n_iterations: int = 100):
+    test_images = generate_test_images_csv(images_dir)
+
+    methods = [
+        cls() for cls in globals().values() if isinstance(cls, type) and issubclass(cls, Method) and cls != Method
+    ]
 
     speed_table = []
     size_table = []
-
-    method_speed = {}
-    method_size = {}
 
     for img_name, img_path in test_images:
         print(f"Image: {img_name}")
         row_speed = {"Image": img_name}
         row_size = {"Image": img_name}
+
         for m in methods:
             iter_time, size = test_speed_and_size(img_path, m, n_iter=n_iterations)
-            row_speed[m.name] = f"{iter_time:.2f} ms"
-            row_size[m.name] = f"{size} Byte"
-            method_speed[m.name] = method_speed.get(m.name, 0) + iter_time
-            method_size[m.name] = method_size.get(m.name, 0) + size
+            row_speed[m.name] = iter_time
+            row_size[m.name] = size / 1024
         speed_table.append(row_speed)
         size_table.append(row_size)
 
-    # add average row
-    row_speed = {"Image": "Average"}
-    row_size = {"Image": "Average"}
+    speed_table.append(aggregate_results(speed_table, "Average", methods, get_average))
+    speed_table.append(aggregate_results(speed_table, "Median", methods, get_median))
 
-    for m in methods:
-        row_speed[m.name] = f"{method_speed[m.name]/len(test_images):.2f} ms"
-        row_size[m.name] = f"{method_size[m.name]/len(test_images):.0f} Byte"
+    size_table.append(aggregate_results(size_table, "Average", methods, get_average))
+    size_table.append(aggregate_results(size_table, "Median", methods, get_median))
 
-    speed_table.append(row_speed)
-    size_table.append(row_size)
-
-    markdown = markdown_table(speed_table).get_markdown()
+    markdown = draw_md_table(speed_table, "ms")
     print(markdown)
+    print()
 
-    markdown = markdown_table(size_table).get_markdown()
+    markdown = draw_md_table(size_table, "KB")
     print(markdown)
 
 
-test_read_speed(images_csv=os.path.join(os.path.dirname(__file__), "test_images.csv"), n_iterations=100)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--images-dir", type=str, required=True)
+    parser.add_argument("--n-iterations", type=int, default=100)
+    args = parser.parse_args()
+
+    test_read_speed(args.images_dir, args.n_iterations)
