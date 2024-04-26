@@ -8,10 +8,10 @@
 
 const unsigned char VERSION_BYTE = 0x01;
 const unsigned int MAGIC_BYTE = (
-      ((unsigned int)'p') << 24 
-    | ((unsigned int)'f') << 16 
-    | ((unsigned int)'m') <<  8 
-    | ((unsigned int)'f')
+      ((unsigned int)'p')
+    | ((unsigned int)'f') << 8
+    | ((unsigned int)'m') << 16
+    | ((unsigned int)'f') << 24
 );
 
 
