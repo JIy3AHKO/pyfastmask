@@ -26,21 +26,29 @@ py::array_t<unsigned char> readMask(const std::string& filename) {
     auto padded_size = size + (8 - (size % 8));
     file.seekg(0, std::ios::beg);
 
-    std::vector<char> buffer(padded_size);
+    char buffer[padded_size];
 
-    file.read(buffer.data(), size);
+    file.read(buffer, size);
     file.close();
+    
+    unsigned long long* data = reinterpret_cast<unsigned long long*>(buffer);
+    unsigned char current_bit_left = sizeof(unsigned long long) * 8;
 
+    Header header = read_header(data, current_bit_left);
 
-    std::vector<unsigned long long> data(
-            reinterpret_cast<unsigned long long*>(buffer.data()),
-            reinterpret_cast<unsigned long long*>(buffer.data()) + padded_size / sizeof(unsigned long long)
-    );
+    if (header.magic != MAGIC_BYTE) {
+        throw std::runtime_error("Invalid magic byte");
+    }
 
-    int mask_height, mask_width;
-    std::vector<unsigned char> mask = decode_mask(data, mask_height, mask_width);
+    if (header.version != VERSION_BYTE) {
+        throw std::runtime_error("Invalid version byte");
+    }
 
-    return py::array_t<unsigned char>({mask_height, mask_width}, mask.data());
+    unsigned char mask[header.mask_height * header.mask_width];
+
+    decode_mask(data, header, current_bit_left, mask);
+
+    return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask);
 }
 
 

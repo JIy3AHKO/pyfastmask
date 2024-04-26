@@ -15,6 +15,63 @@ const unsigned int MAGIC_BYTE = (
 );
 
 
+template <typename T>
+inline T get_integer(char bits, unsigned long long*& data, unsigned char& current_bit_left) {
+    static const std::array<unsigned long long, 64> bitmasks = []() {
+        std::array<unsigned long long, 64> bitmasks;
+        for (char i = 0; i < 64; i++) {
+            bitmasks[i] = (1ULL << i) - 1ULL;
+        }
+        return bitmasks;
+    }();
+
+    // assume that bits is less than 64
+    if (current_bit_left < bits) {
+        T value = data[0] & bitmasks[current_bit_left];
+        bits -= current_bit_left;
+        value |= (data[1] & bitmasks[bits]) << current_bit_left;
+        current_bit_left = 64 - bits;
+        data[1] >>= bits;
+        data++;
+        return value;
+
+    } else {
+        T value = data[0] & bitmasks[bits];
+        current_bit_left -= bits;
+        data[0] >>= bits;
+        return value;
+    }
+}
+
+
+
+struct Header {
+    unsigned int magic;
+    unsigned char version;
+    unsigned char symbol_bit_width;
+    unsigned char count_bit_width;
+    int unique_symbols_count;
+    int intervals;
+    int mask_height;
+    int mask_width;
+};
+
+
+Header read_header(unsigned long long*& data, unsigned char& current_bit_left) {
+    Header header;
+    header.magic = get_integer<unsigned int>(32, data, current_bit_left);
+    header.version = get_integer<unsigned char>(8, data, current_bit_left);
+    header.symbol_bit_width = get_integer<unsigned char>(8, data, current_bit_left);
+    header.count_bit_width = get_integer<unsigned char>(8, data, current_bit_left);
+    header.unique_symbols_count = get_integer<int>(32, data, current_bit_left);
+    header.intervals = get_integer<int>(32, data, current_bit_left);
+    header.mask_height = get_integer<int>(32, data, current_bit_left);
+    header.mask_width = get_integer<int>(32, data, current_bit_left);
+
+    return header;
+}
+
+
 class BitWriter {
 private:
     char running_byte = 0; // byte that is being built
@@ -45,46 +102,6 @@ public:
             data.push_back(running_byte);
         }
         return data;
-    }
-
-};
-
-
-class BitReader {
-private:
-    char current_bit_left = 64;
-    long vector_position = 0;
-    std::array<unsigned long long, 64> bitmasks;
-
-public:
-    BitReader(std::vector<unsigned long long>& data) : data(data) {
-        vector_position = 0;
-        current_bit_left = 64;
-        for (char i = 0; i < 64; i++) {
-            bitmasks[i] = (1ULL << i) - 1ULL;
-        }
-    }
-
-    std::vector<unsigned long long>& data;
-
-    template <typename T>
-    T get_integer(char bits) {
-        // assume that bits is less than 64
-        if (current_bit_left < bits) {
-            T value = data[vector_position] & bitmasks[current_bit_left];
-            bits -= current_bit_left;
-            vector_position++;
-            value |= (data[vector_position] & bitmasks[bits]) << current_bit_left;
-            current_bit_left = 64 - bits;
-            data[vector_position] >>= bits;
-            return value;
-
-        } else {
-            T value = data[vector_position] & bitmasks[bits];
-            current_bit_left -= bits;
-            data[vector_position] >>= bits;
-            return value;
-        }
     }
 
 };
@@ -162,17 +179,28 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
         count_bit_width++;
     }
 
+    Header header = {
+        MAGIC_BYTE,
+        VERSION_BYTE,
+        symbol_bit_width,
+        count_bit_width,
+        unique_symbols.size(),
+        symbols.size(),
+        shape[0],
+        shape[1]
+    };
+
     // encode the mask
     BitWriter bits;
 
-    bits.add_integer(MAGIC_BYTE, 32);
-    bits.add_integer(VERSION_BYTE, 8);
-    bits.add_integer(symbol_bit_width, 8);
-    bits.add_integer(count_bit_width, 8);
-    bits.add_integer(unique_symbols.size(), 32);
-    bits.add_integer(symbols.size(), 32);
-    bits.add_integer(shape[0], 32);
-    bits.add_integer(shape[1], 32);
+    bits.add_integer(header.magic, 32);
+    bits.add_integer(header.version, 8);
+    bits.add_integer(header.symbol_bit_width, 8);
+    bits.add_integer(header.count_bit_width, 8);
+    bits.add_integer(header.unique_symbols_count, 32);
+    bits.add_integer(header.intervals, 32);
+    bits.add_integer(header.mask_height, 32);
+    bits.add_integer(header.mask_width, 32);
 
     // create mapping from symbol to index and store it in the encoded mask
     std::map<unsigned char, int> symbol_to_index;
@@ -197,45 +225,21 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 }
 
 
-std::vector<unsigned char> decode_mask(std::vector<unsigned long long>& encoded, int& mask_height, int& mask_width) {
-    BitReader bits(encoded);
-
-    unsigned int magic = bits.get_integer<unsigned int>(32);
-    if (magic != MAGIC_BYTE) {
-        throw std::invalid_argument("Invalid magic byte");
+void decode_mask(unsigned long long*& data, Header& header, unsigned char& current_bit_left, unsigned char* mask) {
+   
+    unsigned char unique_symbols[header.unique_symbols_count];
+    for (int i = 0; i < header.unique_symbols_count; ++i) {
+        unique_symbols[i] = get_integer<unsigned char>(8, data, current_bit_left);
     }
-
-    unsigned char version = bits.get_integer<unsigned char>(8);
-    if (version != VERSION_BYTE) {
-        throw std::invalid_argument("Invalid version byte");
-    }
-
-    unsigned char symbol_bit_width = bits.get_integer<unsigned char>(8);
-    unsigned char count_bit_width = bits.get_integer<unsigned char>(8);
-    int unique_symbols_count = bits.get_integer<int>(32);
-    int intervals = bits.get_integer<int>(32);
-    mask_height = bits.get_integer<int>(32);
-    mask_width = bits.get_integer<int>(32);
-    int mask_size = mask_height * mask_width;
     
-
-    std::vector<unsigned char> unique_symbols(unique_symbols_count);
-    for (int i = 0; i < unique_symbols_count; ++i) {
-        unique_symbols[i] = bits.get_integer<unsigned char>(8);
-    }
-
-    std::vector<unsigned char> mask(mask_size, unique_symbols[0]);
-    auto mask_ptr = mask.data();
-    
-    for (int i = 0; i < intervals; ++i) {
-        unsigned char symbol_id = bits.get_integer<unsigned char>(symbol_bit_width);
-        int count = bits.get_integer<int>(count_bit_width);
+    for (int i = 0; i < header.intervals; ++i) {
+        unsigned char symbol_id = get_integer<unsigned char>(header.symbol_bit_width, data, current_bit_left);
+        int count = get_integer<int>(header.count_bit_width, data, current_bit_left);
                 
         if (symbol_id != 0) {
-            memset(mask_ptr, unique_symbols[symbol_id], count);
+            memset(mask, unique_symbols[symbol_id], count);
         }
-        mask_ptr += count;
+        mask += count;
     }
 
-    return mask;
 }
