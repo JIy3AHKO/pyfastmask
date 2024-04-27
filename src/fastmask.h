@@ -14,32 +14,28 @@ const unsigned int MAGIC_BYTE = (
     | ((unsigned int)'f') << 24
 );
 
+const std::array<unsigned long long, 64> bitmasks = []() {
+    std::array<unsigned long long, 64> bitmasks;
+    for (char i = 0; i < 64; i++) {
+        bitmasks[i] = (1ULL << i) - 1ULL;
+    }
+    return bitmasks;
+}();
 
 template <typename T>
-inline T get_integer(char bits, unsigned long long*& data, unsigned char& current_bit_left) {
-    static const std::array<unsigned long long, 64> bitmasks = []() {
-        std::array<unsigned long long, 64> bitmasks;
-        for (char i = 0; i < 64; i++) {
-            bitmasks[i] = (1ULL << i) - 1ULL;
-        }
-        return bitmasks;
-    }();
-
+inline void get_integer(char bits, unsigned long long*& data, unsigned char& current_bit_left, T& value) {
     // assume that bits is less than 64
     if (current_bit_left < bits) {
-        T value = data[0] & bitmasks[current_bit_left];
+        value = data[0] & bitmasks[current_bit_left];
         bits -= current_bit_left;
         value |= (data[1] & bitmasks[bits]) << current_bit_left;
         current_bit_left = 64 - bits;
         data[1] >>= bits;
         data++;
-        return value;
-
     } else {
-        T value = data[0] & bitmasks[bits];
+        value = data[0] & bitmasks[bits];
         current_bit_left -= bits;
         data[0] >>= bits;
-        return value;
     }
 }
 
@@ -59,14 +55,14 @@ struct Header {
 
 inline Header read_header(unsigned long long*& data, unsigned char& current_bit_left) {
     Header header;
-    header.magic = get_integer<unsigned int>(32, data, current_bit_left);
-    header.version = get_integer<unsigned char>(8, data, current_bit_left);
-    header.symbol_bit_width = get_integer<unsigned char>(8, data, current_bit_left);
-    header.count_bit_width = get_integer<unsigned char>(8, data, current_bit_left);
-    header.unique_symbols_count = get_integer<unsigned int>(32, data, current_bit_left);
-    header.intervals = get_integer<unsigned int>(32, data, current_bit_left);
-    header.mask_height = get_integer<unsigned int>(32, data, current_bit_left);
-    header.mask_width = get_integer<unsigned int>(32, data, current_bit_left);
+    get_integer<unsigned int>(32, data, current_bit_left, header.magic);
+    get_integer<unsigned char>(8, data, current_bit_left, header.version);
+    get_integer<unsigned char>(8, data, current_bit_left, header.symbol_bit_width);
+    get_integer<unsigned char>(8, data, current_bit_left, header.count_bit_width);
+    get_integer<unsigned int>(32, data, current_bit_left, header.unique_symbols_count);
+    get_integer<unsigned int>(32, data, current_bit_left, header.intervals);
+    get_integer<unsigned int>(32, data, current_bit_left, header.mask_height);
+    get_integer<unsigned int>(32, data, current_bit_left, header.mask_width);
 
     return header;
 }
@@ -225,19 +221,19 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
 }
 
 
-inline void decode_mask(unsigned long long*& data, const Header& header, unsigned char& current_bit_left, unsigned char* mask) {
-   
-    unsigned char unique_symbols[header.unique_symbols_count];
+inline void decode_mask(
+    unsigned long long* data, 
+    const Header& header,
+    unsigned char& current_bit_left, 
+    unsigned char* mask, 
+    const unsigned char* unique_symbols
+) {
+    unsigned char symbol_id;
+    size_t count;
 
-    for (int i = 0; i < header.unique_symbols_count; ++i) {
-        unique_symbols[i] = get_integer<unsigned char>(8, data, current_bit_left);
-    }
-    
-    memset(mask, unique_symbols[0], header.mask_height * header.mask_width);
-
-    for (int i = 0; i < header.intervals; ++i) {
-        unsigned char symbol_id = get_integer<unsigned char>(header.symbol_bit_width, data, current_bit_left);
-        size_t count = get_integer<size_t>(header.count_bit_width, data, current_bit_left);
+    for (unsigned int i = 0; i < header.intervals; ++i) {
+        get_integer<unsigned char>(header.symbol_bit_width, data, current_bit_left, symbol_id);
+        get_integer<size_t>(header.count_bit_width, data, current_bit_left, count);
 
         if (symbol_id != 0) {
             memset(mask, unique_symbols[symbol_id], count);
