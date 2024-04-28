@@ -95,6 +95,30 @@ class CV2BmpMethod(Method):
         return mask
 
 
+class NPZMethod(Method):
+    def __init__(self):
+        super().__init__("npz", "npz")
+
+    def save(self, path: str, mask: np.ndarray):
+        np.savez_compressed(path, mask=mask)
+
+    def read(self, path: str) -> np.ndarray:
+        mask = np.load(path)["mask"]
+        return mask
+
+
+class NPYMethod(Method):
+    def __init__(self):
+        super().__init__("npy", "npy")
+
+    def save(self, path: str, mask: np.ndarray):
+        np.save(path, mask)
+
+    def read(self, path: str) -> np.ndarray:
+        mask = np.load(path)
+        return mask
+
+
 class QOIMethod(Method):
     def __init__(self):
         super().__init__("qoi", "qoi")
