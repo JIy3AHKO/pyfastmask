@@ -2,6 +2,7 @@
 #include <pybind11/stl.h>
 #include "pybind11/numpy.h"
 #include <fstream>
+#include <vector>
 #include "fastmask.h"
 #include "encode.h"
 #include "decode.h"
@@ -38,12 +39,12 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
     auto padded_size = size + (8 - (size % 8));
     file.seekg(0, std::ios::beg);
 
-    char buffer[padded_size];
+    std::vector<char> buffer(padded_size);
 
-    file.read(buffer, size);
+    file.read(buffer.data(), size);
     file.close();
 
-    Header header = read_header(buffer);
+    Header header = read_header(buffer.data());
 
     if (header.magic != MAGIC_BYTE) {
         throw std::invalid_argument("File is not a valid fastmask file.");
@@ -53,13 +54,13 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
         throw std::invalid_argument("This file was created with a different version of fastmask.");
     }
 
-    unsigned long long* data = reinterpret_cast<unsigned long long*>(buffer + sizeof(Header));
+    unsigned long long* data = reinterpret_cast<unsigned long long*>(buffer.data() + sizeof(Header));
 
-    unsigned char mask[header.mask_height * header.mask_width];
+    std::vector<unsigned char> mask(header.mask_height * header.mask_width);
 
-    decode_mask(data, header, mask);
+    decode_mask(data, header, mask.data());
 
-    return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask);
+    return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask.data());
 }
 
 
@@ -80,11 +81,11 @@ py::array_t<unsigned char> read_mask_from_bytes(py::bytes data_bytes) {
 
     unsigned long long* data = reinterpret_cast<unsigned long long*>(buffer + sizeof(Header));
 
-    unsigned char mask[header.mask_height * header.mask_width];
+    std::vector<unsigned char> mask(header.mask_height * header.mask_width);
 
-    decode_mask(data, header, mask);
+    decode_mask(data, header, mask.data());
 
-    return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask);
+    return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask.data());
 
 }
 

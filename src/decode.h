@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include <cstring>
 #include "fastmask.h"
 
@@ -46,7 +47,7 @@ inline void decode_mask(
     unsigned char * mask
 ) {
     unsigned char current_bit_left = 64;
-    unsigned char unique_symbols[header.unique_symbols_count];
+    std::vector<unsigned char> unique_symbols(header.unique_symbols_count);
 
     for (unsigned int i = 0; i < header.unique_symbols_count; ++i) {
         get_integer<unsigned char>(8, data, current_bit_left, unique_symbols[i]);
