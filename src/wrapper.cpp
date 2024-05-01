@@ -36,7 +36,8 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
     std::streamsize size = file.tellg();
-    auto padded_size = size + (8 - (size % 8));
+    auto reminder = (size - sizeof(Header)) % 8;
+    auto padded_size = size + (reminder == 0 ? 0 : 8 - reminder);
     file.seekg(0, std::ios::beg);
 
     std::vector<char> buffer(padded_size);
@@ -54,11 +55,9 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
         throw std::invalid_argument("This file was created with a different version of fastmask.");
     }
 
-    unsigned long long* data = reinterpret_cast<unsigned long long*>(buffer.data() + sizeof(Header));
-
     std::vector<unsigned char> mask(header.mask_height * header.mask_width);
 
-    decode_mask(data, header, mask.data());
+    decode_mask(buffer.data() + sizeof(Header), header, mask.data());
 
     return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask.data());
 }
@@ -79,11 +78,9 @@ py::array_t<unsigned char> read_mask_from_bytes(py::bytes data_bytes) {
         throw std::invalid_argument("This file was created with a different version of fastmask.");
     }
 
-    unsigned long long* data = reinterpret_cast<unsigned long long*>(buffer + sizeof(Header));
-
     std::vector<unsigned char> mask(header.mask_height * header.mask_width);
 
-    decode_mask(data, header, mask.data());
+    decode_mask(buffer + sizeof(Header), header, mask.data());
 
     return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask.data());
 
@@ -114,7 +111,7 @@ py::dict read_header_from_file(const std::string& filename) {
         "symbol_bit_width"_a = header.symbol_bit_width,
         "count_bit_width"_a = header.count_bit_width,
         "unique_symbols_count"_a = header.unique_symbols_count,
-        "intervals"_a = header.intervals,
+        // "intervals"_a = header.intervals,
         "shape"_a = py::make_tuple(header.mask_height, header.mask_width)
     );
 }
@@ -137,10 +134,8 @@ PYBIND11_MODULE(pyfastmask, m) {
         .def_readonly("symbol_bit_width", &Header::symbol_bit_width)
         .def_readonly("count_bit_width", &Header::count_bit_width)
         .def_readonly("unique_symbols_count", &Header::unique_symbols_count)
-        .def_readonly("intervals", &Header::intervals)
+        .def_readonly("line_count_bit_width", &Header::line_count_bit_width)
         .def_readonly("mask_height", &Header::mask_height)
         .def_readonly("mask_width", &Header::mask_width);
-
-    
 }
 

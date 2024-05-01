@@ -1,22 +1,22 @@
 #pragma once
+#include <cstdint>
 
-
-const unsigned char VERSION_BYTE = 0x01;
-const unsigned int MAGIC_BYTE = (
-      ((unsigned int)'p')
-    | ((unsigned int)'f') << 8
-    | ((unsigned int)'m') << 16
-    | ((unsigned int)'f') << 24
+const uint8_t VERSION_BYTE = 0x01;
+const uint32_t MAGIC_BYTE = (
+      ((uint32_t)'p')
+    | ((uint32_t)'f') << 8
+    | ((uint32_t)'m') << 16
+    | ((uint32_t)'f') << 24
 );
 
 
 struct Header {
-    unsigned int magic;
-    unsigned char version;
-    unsigned char symbol_bit_width;
-    unsigned char count_bit_width;
-    unsigned int unique_symbols_count;
-    unsigned int intervals;
-    unsigned int mask_height;
-    unsigned int mask_width;
+    uint32_t magic;
+    uint8_t version;
+    uint8_t symbol_bit_width;
+    uint8_t count_bit_width;
+    uint8_t line_count_bit_width;
+    uint32_t unique_symbols_count;
+    uint32_t mask_height;
+    uint32_t mask_width;
 };

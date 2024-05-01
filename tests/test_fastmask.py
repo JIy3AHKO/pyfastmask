@@ -34,6 +34,13 @@ class TestReadWrite(unittest.TestCase):
         ], dtype=np.uint8)
         self.test_params.append(('simple_arange', simple_arange_mask))
 
+        simple_arange_backward_mask = np.array([
+            [9, 8, 7],
+            [6, 5, 4],
+            [3, 2, 1]
+        ], dtype=np.uint8)
+        self.test_params.append(('simple_arange_backward', simple_arange_backward_mask))
+
         all_zeros_mask = np.zeros((100, 100), dtype=np.uint8)
         self.test_params.append(('all_zeros', all_zeros_mask))
 

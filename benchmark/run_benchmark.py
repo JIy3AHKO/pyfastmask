@@ -262,7 +262,7 @@ if __name__ == "__main__":
     parser.add_argument("--images-dir", type=str, required=True)
     parser.add_argument("--n-iterations", type=int, default=100)
     parser.add_argument("--methods", type=str, nargs="+", default=None)
-    parser.add_argument("--update_readme", action="store_true")
+    parser.add_argument("--update-readme", action="store_true")
     args = parser.parse_args()
 
     test_read_speed(args.images_dir, args.n_iterations, args.update_readme, args.methods)
