@@ -160,8 +160,7 @@ def read_csv(path: str) -> List[List[str]]:
 
 def generate_test_images_csv(images_dir: str) -> List[List[str]]:
     res = []
-    for img_name in os.listdir(images_dir):
-        bname = os.path.basename(img_name)
+    for img_name in sorted(os.listdir(images_dir)):
         bname, ext = os.path.splitext(img_name)
         res.append([bname, os.path.join(images_dir, img_name)])
 
@@ -189,12 +188,22 @@ def get_median(data: List[Dict[str, float]], method_name: str) -> float:
     return np.median([row[method_name] for row in data])
 
 
-def test_read_speed(images_dir: str, n_iterations: int = 100):
+def test_read_speed(
+        images_dir: str,
+        n_iterations: int = 100,
+        update_readme: bool = False,
+        methods: List[str] = None,
+):
     test_images = generate_test_images_csv(images_dir)
 
-    methods = [
+    available_methods = [
         cls() for cls in globals().values() if isinstance(cls, type) and issubclass(cls, Method) and cls != Method
     ]
+
+    if methods is None:
+        methods = available_methods
+    else:
+        methods = [m for m in available_methods if m.name in methods]
 
     speed_table = []
     size_table = []
@@ -217,18 +226,43 @@ def test_read_speed(images_dir: str, n_iterations: int = 100):
     size_table.append(aggregate_results(size_table, "Average", methods, get_average))
     size_table.append(aggregate_results(size_table, "Median", methods, get_median))
 
-    markdown = draw_md_table(speed_table, "ms")
-    print(markdown)
+    speed_markdown = draw_md_table(speed_table, "ms")
+    print(speed_markdown)
     print()
 
-    markdown = draw_md_table(size_table, "KB")
-    print(markdown)
+    size_markdown = draw_md_table(size_table, "KiB")
+    print(size_markdown)
+
+    if update_readme:
+        with open("README.md", "r") as f:
+            readme = f.read()
+
+        start_str = "Reading speed:"
+        end_str = "All measurements are averaged over 1000 iterations. The best result is highlighted in bold."
+
+        start = readme.find(start_str)
+        end = readme.find(end_str)
+
+        new_readme = [
+            readme[:start + len(start_str) + 1],
+            speed_markdown,
+            "Mask size:\n",
+            size_markdown,
+            readme[end:]
+        ]
+
+        new_readme = "\n".join(new_readme)
+
+        with open("README.md", "w") as f:
+            f.write(new_readme)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--images-dir", type=str, required=True)
     parser.add_argument("--n-iterations", type=int, default=100)
+    parser.add_argument("--methods", type=str, nargs="+", default=None)
+    parser.add_argument("--update_readme", action="store_true")
     args = parser.parse_args()
 
-    test_read_speed(args.images_dir, args.n_iterations)
+    test_read_speed(args.images_dir, args.n_iterations, args.update_readme, args.methods)
