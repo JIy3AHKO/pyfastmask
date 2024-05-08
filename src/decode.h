@@ -8,22 +8,25 @@
 #include "fastmask.h"
 
 
-inline buffer_t first_bits(int bits) {
-    return (1ULL << bits) - 1ULL;
+
+inline void get_integer8(const char*& data, uint8_t& value) {
+    value = *reinterpret_cast<const uint8_t*>(data);
+    data += 1;
 }
 
-inline buffer_t get_integer(int bits, const buffer_t*& data, int& bit_offset) {
-    buffer_t value = (*data >> bit_offset) & (first_bits(bits));
-    bit_offset += bits;
-
-    if (bit_offset >= buffer_t_bits) {
-        data++;
-        bit_offset -= buffer_t_bits;
-        value |= (*data & (first_bits(bit_offset))) << (bits - bit_offset);
-    }
-
-    return value;
+inline void get_integer16(const char*& data, uint16_t& value) {
+    value = *reinterpret_cast<const uint16_t*>(data);
+    data += 2;
 }
+
+inline void get_integer8_12_12(const char*& data, uint8_t& value1, uint16_t& value2, uint16_t& value3) {
+    uint32_t value = *reinterpret_cast<const uint32_t*>(data);
+    value1 = value & 0xFF;
+    value2 = (value >> 8) & 0xFFF;
+    value3 = (value >> 20) & 0xFFF;
+    data += 4;
+}
+
 
 
 inline Header read_header(const char* data) {
@@ -36,46 +39,43 @@ inline Header read_header(const char* data) {
 
 
 inline void decode_mask(
-    const char* encdoded_data,
+    const char* data,
     const Header& header,
     unsigned char * mask
 ) {
-    const buffer_t* data = reinterpret_cast<const buffer_t*>(encdoded_data);
 
-    int bit_offset = 0;
-    std::vector<int> unique_symbols(header.unique_symbols_count);
+    std::vector<uint8_t> unique_symbols(header.unique_symbols_count);
 
     for (unsigned int i = 0; i < header.unique_symbols_count; ++i) {
-        unique_symbols[i] = get_integer(8, data, bit_offset);
+        get_integer8(data, unique_symbols[i]);
     }
     
-    buffer_t symbol_id;
-    buffer_t count;
-    buffer_t line_len;
-    buffer_t skip_count;
+    uint8_t symbol_id;
+    uint16_t count;
+    uint16_t line_len;
+    uint16_t skip_count;
 
     // read first line as regular rle
-    line_len = get_integer(header.line_count_bit_width, data, bit_offset);
+    get_integer16(data, line_len);
     for (size_t i = 0; i < line_len; ++i) {
-        symbol_id = get_integer(header.symbol_bit_width, data, bit_offset);
-        count = get_integer(header.count_bit_width, data, bit_offset);
-        std::memset(mask, unique_symbols[symbol_id], count);
+        get_integer8(data, symbol_id);
+        get_integer16(data, count);
+        memset(mask, unique_symbols[symbol_id], count);
         mask += count;
     }
 
     // read the rest of the lines as diffs
     for (uint32_t i = 1; i < header.mask_height; ++i) {
-        std::memcpy(mask, mask - header.mask_width, header.mask_width);
+        memcpy(mask, mask - header.mask_width, header.mask_width);
 
-        buffer_t offset = 0;
+        uint64_t offset = 0;
 
-        line_len = get_integer(header.line_count_bit_width, data, bit_offset);
+        get_integer16(data, line_len);
         for (uint32_t j = 0; j < line_len; ++j) {
-            skip_count = get_integer(header.count_bit_width, data, bit_offset);
+            get_integer8_12_12(data, symbol_id, skip_count, count);
             offset += skip_count;
-            symbol_id = get_integer(header.symbol_bit_width, data, bit_offset);
-            count = get_integer(header.count_bit_width, data, bit_offset);
-            std::memset(mask + offset, unique_symbols[symbol_id], count);
+
+            memset(mask + offset, unique_symbols[symbol_id], count);
             offset += count;
         }
 

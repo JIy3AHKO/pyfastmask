@@ -157,7 +157,7 @@ struct RLELine {
             int count = this->counts[i];
 
             bits.add_integer(symbol, symbol_bit_width);
-            bits.add_integer(count, count_bit_width);
+            bits.add_integer(count, line_count_bit_width);
         }
     }
 
@@ -188,10 +188,10 @@ struct RLELine {
             if (this->symbols[i] == SAME_AS_PREV) {
                 skip_count += this->counts[i];
             } else {
-                bits.add_integer(skip_count, count_bit_width);
                 int symbol = symbol_to_index[this->symbols[i]];
                 int count = this->counts[i];
                 bits.add_integer(symbol, symbol_bit_width);
+                bits.add_integer(skip_count, count_bit_width);
                 bits.add_integer(count, count_bit_width);
                 skip_count = 0;
             }
@@ -274,9 +274,9 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
     }
 
     auto unique_symbols = generate_all_unique_symbols(rle_lines);
-    uint8_t symbol_bit_width = estimate_symbol_bit_width(unique_symbols);
-    uint8_t count_bit_width = estimate_count_bit_width(rle_lines);
-    uint8_t line_count_bit_width = estimate_line_count_bit_width(rle_lines);
+    uint8_t symbol_bit_width = 8; // estimate_symbol_bit_width(unique_symbols);
+    uint8_t count_bit_width = 12; // estimate_count_bit_width(rle_lines);
+    uint8_t line_count_bit_width = 16; // estimate_line_count_bit_width(rle_lines);
 
     // create mapping from symbol to index and store it in the encoded mask
     std::map<uint32_t, int> symbol_to_index;
