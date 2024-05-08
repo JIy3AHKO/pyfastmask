@@ -2,7 +2,7 @@ from setuptools import setup
 
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-__version__ = "2024.04.26"
+__version__ = "0.1.0"
 
 ext_modules = [
     Pybind11Extension("pyfastmask", ["src/wrapper.cpp"], include_pybind11=True),

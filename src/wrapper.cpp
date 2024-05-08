@@ -63,10 +63,10 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
 }
 
 
-py::array_t<unsigned char> read_mask_from_bytes(py::bytes data_bytes) {
-    py::buffer_info info(py::buffer(data_bytes).request());
+py::array_t<unsigned char> read_mask_from_bytes(const py::buffer& data_bytes) {
+    py::buffer_info info = data_bytes.request();
     
-    char* buffer = static_cast<char*>(info.ptr);
+    const char* buffer = static_cast<const char*>(info.ptr);
 
     Header header = read_header(buffer);
 
@@ -111,7 +111,7 @@ py::dict read_header_from_file(const std::string& filename) {
         "symbol_bit_width"_a = header.symbol_bit_width,
         "count_bit_width"_a = header.count_bit_width,
         "unique_symbols_count"_a = header.unique_symbols_count,
-        // "intervals"_a = header.intervals,
+        "line_count_bit_width"_a = header.line_count_bit_width,
         "shape"_a = py::make_tuple(header.mask_height, header.mask_width)
     );
 }

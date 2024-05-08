@@ -56,7 +56,6 @@ public:
 };
 
 
-
 std::vector<uint32_t> generate_unique_symbols_map(std::vector<uint32_t>& symbols) {
     std::set<uint32_t> symbol_to_count;
     for (auto symbol : symbols) {
