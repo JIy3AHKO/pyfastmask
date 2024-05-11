@@ -11,21 +11,16 @@
 #define buffer_t uint64_t
 #define buffer_t_bits 64
 
-const std::array<buffer_t, buffer_t_bits> bitmasks = []() {
-    std::array<buffer_t, buffer_t_bits> bitmasks;
-    for (char i = 0; i < buffer_t_bits; i++) {
-        bitmasks[i] = (1ULL << i) - 1ULL;
-    }
-
-    return bitmasks;
-}();
+inline buffer_t first_bits(int bits) {
+    return (1ULL << bits) - 1ULL;
+}
 
 inline buffer_t get_integer(int bits, const buffer_t*& data, int& bit_offset) {
-    buffer_t value = (*data >> bit_offset) & (bitmasks[bits]);
+    buffer_t value = (*data >> bit_offset) & (first_bits(bits));
 
     if (bit_offset + bits >= buffer_t_bits) {
         data++;
-        value |= (*data & (bitmasks[bit_offset + bits - buffer_t_bits])) << (buffer_t_bits - bit_offset);
+        value |= (*data & (first_bits(bit_offset + bits - buffer_t_bits))) << (buffer_t_bits - bit_offset);
         bit_offset = bit_offset + bits - buffer_t_bits;
     } else {
         bit_offset += bits;
