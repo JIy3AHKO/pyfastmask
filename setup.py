@@ -4,8 +4,15 @@ from pybind11.setup_helpers import Pybind11Extension, build_ext
 
 __version__ = "0.1.0"
 
+extra_compile_flags = ["-march=native"]
+
 ext_modules = [
-    Pybind11Extension("pyfastmask", ["src/wrapper.cpp"], include_pybind11=True),
+    Pybind11Extension(
+        name="pyfastmask",
+        sources=["src/wrapper.cpp"],
+        include_pybind11=True,
+        extra_compile_args=extra_compile_flags
+    ),
 ]
 
 setup(
