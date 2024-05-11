@@ -1,8 +1,9 @@
 #pragma once
 
 #include <array>
-#include <vector>
+#include <algorithm>
 #include <cstring>
+#include <vector>
 #include <cstdint>
 #include "fastmask.h"
 
@@ -19,7 +20,7 @@ const std::array<buffer_t, buffer_t_bits> bitmasks = []() {
     return bitmasks;
 }();
 
-inline buffer_t get_integer(unsigned char bits, const buffer_t*& data, unsigned char& bit_offset) {
+inline buffer_t get_integer(int bits, const buffer_t*& data, int& bit_offset) {
     buffer_t value = (*data >> bit_offset) & (bitmasks[bits]);
 
     if (bit_offset + bits >= buffer_t_bits) {
@@ -36,7 +37,7 @@ inline buffer_t get_integer(unsigned char bits, const buffer_t*& data, unsigned 
 
 inline Header read_header(const char* data) {
     Header header;
-    memcpy(&header, data, sizeof(Header));
+    std::memcpy(&header, data, sizeof(Header));
 
     return header;
 }
@@ -50,7 +51,7 @@ inline void decode_mask(
 ) {
     const buffer_t* data = reinterpret_cast<const buffer_t*>(encdoded_data);
 
-    unsigned char bit_offset = 0;
+    int bit_offset = 0;
     std::vector<int> unique_symbols(header.unique_symbols_count);
 
     for (unsigned int i = 0; i < header.unique_symbols_count; ++i) {
@@ -67,13 +68,13 @@ inline void decode_mask(
     for (size_t i = 0; i < line_len; ++i) {
         symbol_id = get_integer(header.symbol_bit_width, data, bit_offset);
         count = get_integer(header.count_bit_width, data, bit_offset);
-        memset(mask, unique_symbols[symbol_id], count);
+        std::memset(mask, unique_symbols[symbol_id], count);
         mask += count;
     }
 
     // read the rest of the lines as diffs
     for (uint32_t i = 1; i < header.mask_height; ++i) {
-        memcpy(mask, mask - header.mask_width, header.mask_width);
+        std::memcpy(mask, mask - header.mask_width, header.mask_width);
 
         buffer_t offset = 0;
 
