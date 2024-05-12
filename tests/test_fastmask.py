@@ -14,7 +14,47 @@ class TempFile:
         return self.name
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        os.remove(self.name)
+        if os.path.exists(self.name):
+            os.remove(self.name)
+
+
+class TestWrite(unittest.TestCase):
+    def test_write_rgb_produce_error(self):
+        mask = np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8)
+
+        with self.assertRaises(ValueError):
+            with TempFile() as f:
+                pf.write(f, mask)
+
+    def test_write_rgba_produce_error(self):
+        mask = np.random.randint(0, 256, (100, 100, 4), dtype=np.uint8)
+
+        with self.assertRaises(ValueError):
+            with TempFile() as f:
+                pf.write(f, mask)
+
+    def test_write_float_produce_error(self):
+        mask = np.random.rand(100, 100).astype(np.float32)
+
+        with self.assertRaises(ValueError):
+            with TempFile() as f:
+                pf.write(f, mask)
+
+    def test_write_int_produce_error(self):
+        mask = np.random.randint(0, 256, (100, 100), dtype=np.int32)
+
+        with self.assertRaises(ValueError):
+            with TempFile() as f:
+                pf.write(f, mask)
+
+    def test_write_wh1_not_produce_error(self):
+        mask = np.random.randint(0, 256, (33, 44, 1), dtype=np.uint8)
+
+        with TempFile() as f:
+            pf.write(f, mask)
+            mask_after = pf.read(f)
+
+        self.assertEqual(mask_after.shape, (33, 44))
 
 
 class TestReadWrite(unittest.TestCase):
@@ -58,7 +98,6 @@ class TestReadWrite(unittest.TestCase):
         non_contiguous_mask = non_contiguous_mask[::2, ::2]
 
         self.test_params.append(('non_contiguous', non_contiguous_mask))
-
 
     def test_read_write_consistency_disk(self):
         for name, img in self.test_params:

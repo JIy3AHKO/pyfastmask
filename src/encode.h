@@ -304,6 +304,9 @@ std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
     memcpy(header_bytes.data(), &header, sizeof(Header));
 
     std::vector<unsigned char> encoded_data = bits.get_data();
+    while (encoded_data.size() % sizeof(buffer_t) != 0) {
+        encoded_data.push_back(static_cast<unsigned char>(0));
+    }
     std::vector<char> encoded(encoded_data.begin(), encoded_data.end());
     encoded.insert(encoded.begin(), header_bytes.begin(), header_bytes.end());
 

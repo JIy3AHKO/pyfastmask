@@ -8,9 +8,6 @@
 #include "fastmask.h"
 
 
-#define buffer_t uint64_t
-#define buffer_t_bits 64
-
 inline buffer_t first_bits(int bits) {
     return (1ULL << bits) - 1ULL;
 }

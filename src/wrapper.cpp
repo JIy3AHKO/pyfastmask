@@ -36,11 +36,17 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
 
     std::streamsize size = file.tellg();
-    auto reminder = (size - sizeof(Header)) % 8;
-    auto padded_size = size + (reminder == 0 ? 0 : 8 - reminder);
     file.seekg(0, std::ios::beg);
 
-    std::vector<char> buffer(padded_size);
+    if (size < sizeof(Header)) {
+        throw std::invalid_argument("File is not a valid fastmask file. Header is missing.");
+    }
+
+    if ((size - sizeof(Header)) % sizeof(buffer_t) != 0) {
+        throw std::invalid_argument("File is not a valid fastmask file. Data is not aligned.");
+    }
+
+    std::vector<char> buffer(size);
 
     file.read(buffer.data(), size);
     file.close();
@@ -68,6 +74,14 @@ py::array_t<unsigned char> read_mask_from_bytes(const py::buffer& data_bytes) {
     
     const char* buffer = static_cast<const char*>(info.ptr);
 
+    if (info.size < sizeof(Header)) {
+        throw std::invalid_argument("Data is not a valid fastmask file. Header is missing.");
+    }
+
+    if ((info.size - sizeof(Header)) % sizeof(buffer_t) != 0) {
+        throw std::invalid_argument("Data is not aligned.");
+    }
+
     Header header = read_header(buffer);
 
     if (header.magic != MAGIC_BYTE) {
@@ -91,7 +105,7 @@ py::dict read_header_from_file(const std::string& filename) {
     std::streamsize size = file.tellg();
 
     if (size < sizeof(Header)) {
-        throw std::invalid_argument("File is not a valid fastmask file.");
+        throw std::invalid_argument("File is not a valid fastmask file. Header is missing.");
     }
    
     file.seekg(0, std::ios::beg);

@@ -1,6 +1,9 @@
 #pragma once
 #include <cstdint>
 
+#define buffer_t uint64_t
+#define buffer_t_bits 64
+
 const uint8_t VERSION_BYTE = 0x01;
 const uint32_t MAGIC_BYTE = (
       ((uint32_t)'p')
