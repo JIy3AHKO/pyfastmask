@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
@@ -8,7 +8,7 @@ extra_compile_flags = ["-march=native"]
 
 ext_modules = [
     Pybind11Extension(
-        name="pyfastmask",
+        name="_pyfastmask",
         sources=["src/wrapper.cpp"],
         include_pybind11=True,
         extra_compile_args=extra_compile_flags
@@ -23,5 +23,7 @@ setup(
     description="Fast low color mask read/write",
     cmdclass={"build_ext": build_ext},
     ext_modules=ext_modules,
+    packages=find_packages(),
     zip_safe=False,
+    requires=["numpy"],
 )

@@ -118,7 +118,7 @@ py::dict read_header_from_file(const std::string& filename) {
     
 
 
-PYBIND11_MODULE(pyfastmask, m) {
+PYBIND11_MODULE(_pyfastmask, m) {
     m.doc() = "Fast mask module";
 
     m.def("write", &write_mask_to_file, "Write mask to file", py::arg("filename"), py::arg("mask"));

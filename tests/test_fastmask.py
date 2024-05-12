@@ -44,11 +44,21 @@ class TestReadWrite(unittest.TestCase):
         all_zeros_mask = np.zeros((100, 100), dtype=np.uint8)
         self.test_params.append(('all_zeros', all_zeros_mask))
 
-        binary_noise = np.random.randint(0, 2, (100, 100), dtype=np.uint8)
+        all_constant_mask = np.full((101, 101), 127, dtype=np.uint8)
+        self.test_params.append(('all_constant', all_constant_mask))
+
+        binary_noise = np.random.randint(0, 2, (1234, 2345), dtype=np.uint8)
         self.test_params.append(('binary_noise', binary_noise))
 
-        noise = np.random.randint(0, 256, (100, 100), dtype=np.uint8)
+        noise = np.random.randint(0, 256, (77, 171), dtype=np.uint8)
         self.test_params.append(('noise', noise))
+
+        non_contiguous_mask = np.zeros((100, 100), dtype=np.uint8)
+        non_contiguous_mask[20:80, 20:80] = 1
+        non_contiguous_mask = non_contiguous_mask[::2, ::2]
+
+        self.test_params.append(('non_contiguous', non_contiguous_mask))
+
 
     def test_read_write_consistency_disk(self):
         for name, img in self.test_params:
