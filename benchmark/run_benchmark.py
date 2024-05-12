@@ -4,6 +4,10 @@ import os
 import time
 from typing import List, Dict, Union
 
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
 import cv2
 import numpy as np
 import qoi
@@ -194,6 +198,7 @@ def test_read_speed(
         update_readme: bool = False,
         methods: List[str] = None,
 ):
+    cv2.setNumThreads(0)
     test_images = generate_test_images_csv(images_dir)
 
     available_methods = [

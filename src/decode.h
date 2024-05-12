@@ -17,13 +17,12 @@ inline buffer_t first_bits(int bits) {
 
 inline buffer_t get_integer(int bits, const buffer_t*& data, int& bit_offset) {
     buffer_t value = (*data >> bit_offset) & (first_bits(bits));
+    bit_offset += bits;
 
-    if (bit_offset + bits >= buffer_t_bits) {
+    if (bit_offset >= buffer_t_bits) {
         data++;
-        value |= (*data & (first_bits(bit_offset + bits - buffer_t_bits))) << (buffer_t_bits - bit_offset);
-        bit_offset = bit_offset + bits - buffer_t_bits;
-    } else {
-        bit_offset += bits;
+        bit_offset -= buffer_t_bits;
+        value |= (*data & (first_bits(bit_offset))) << (bits - bit_offset);
     }
 
     return value;
@@ -79,7 +78,7 @@ inline void decode_mask(
             offset += skip_count;
             symbol_id = get_integer(header.symbol_bit_width, data, bit_offset);
             count = get_integer(header.count_bit_width, data, bit_offset);
-            memset(mask + offset, unique_symbols[symbol_id], count);
+            std::memset(mask + offset, unique_symbols[symbol_id], count);
             offset += count;
         }
 
