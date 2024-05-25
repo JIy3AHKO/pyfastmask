@@ -28,7 +28,7 @@ jobs:
         python3 -m unittest discover tests/
 
   build-and-test-macos:
-    runs-on: macos-latest
+    runs-on: macos-14
 
     steps:
     - uses: actions/checkout@v4
