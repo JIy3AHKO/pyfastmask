@@ -253,7 +253,7 @@ uint8_t estimate_symbol_bit_width(const std::vector<uint32_t>& unique_symbols) {
 }
 
 
-std::vector<char> encode_mask(unsigned char * mask, std::vector<long>& shape) {
+std::vector<char> encode_mask(unsigned char * mask, const std::vector<long>& shape) {
     // assert that the mask is 2D
     if (shape.size() != 2) {
         throw std::invalid_argument("Mask must be 2D");

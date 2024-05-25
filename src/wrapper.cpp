@@ -15,7 +15,8 @@ void write_mask_to_file(const std::string& filename, py::buffer mask) {
     py::buffer_info info = mask.request();
     unsigned char* ptr = static_cast<unsigned char*>(info.ptr);
 
-    std::vector<char> encoded = encode_mask(ptr, info.shape);
+    std::vector<long> shape = std::vector<long>(info.shape.begin(), info.shape.end());
+    std::vector<char> encoded = encode_mask(ptr, shape);
 
     std::ofstream file(filename, std::ios::binary);
     file.write(encoded.data(), encoded.size());
@@ -26,7 +27,8 @@ py::bytes write_mask_to_bytes(py::buffer mask) {
     py::buffer_info info = mask.request();
     unsigned char* ptr = static_cast<unsigned char*>(info.ptr);
 
-    std::vector<char> encoded = encode_mask(ptr, info.shape);
+    std::vector<long> shape = std::vector<long>(info.shape.begin(), info.shape.end());
+    std::vector<char> encoded = encode_mask(ptr, shape);
 
     return py::bytes(encoded.data(), encoded.size());
 }
