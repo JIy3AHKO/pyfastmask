@@ -1,7 +1,7 @@
 pyfastmask - Fast image segmentation format
 ==============
 
-![Tests](https://github.com/JIy3AHKO/pyfastmask/actions/workflows/python-package.yml/badge.svg?branch=master)
+![Tests](https://github.com/JIy3AHKO/pyfastmask/actions/workflows/build-and-test.yml/badge.svg?branch=master)
 
 This is a simple format for storing single channel images. It is designed to be fast to read, and to be easy to use in C++ and Python.
 
