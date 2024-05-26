@@ -4,7 +4,6 @@ from setuptools import setup, find_packages
 
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-__version__ = "0.1.0"
 
 os_type = platform.system()
 features = cpuinfo.get_cpu_info()
@@ -36,14 +35,8 @@ ext_modules = [
 ]
 
 setup(
-    name="pyfastmask",
-    version=__version__,
-    author="Andrei Luzan",
-    url="https://github.com/JIy3AHKO/pyfastmask",
-    description="Fast low color mask read/write",
     cmdclass={"build_ext": build_ext},
     ext_modules=ext_modules,
     packages=find_packages(),
     zip_safe=False,
-    requires=["numpy"],
 )

@@ -5,3 +5,16 @@ requires = [
     "py-cpuinfo>=9.0.0",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyfastmask"
+version = "0.1.0"
+description = "Fast low color mask read/write"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [{name="Andrei Luzan"}]
+keywords = ["mask", "segmentation", "fast", "read", "write"]
+urls={ "Repository"="https://github.com/JIy3AHKO/pyfastmask" }
+dependencies = [
+    "numpy>=1.20.0",
+]
