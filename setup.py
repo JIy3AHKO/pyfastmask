@@ -23,7 +23,7 @@ if os_type == "Windows":
 elif os_type == "Linux":
     extra_compile_flags = ["-march=native"]
 elif os_type == "Darwin":
-    extra_compile_flags = ["-march=native"]
+    extra_compile_flags = []
 
 
 ext_modules = [
