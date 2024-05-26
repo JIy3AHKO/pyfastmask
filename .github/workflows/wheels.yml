@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.18.1
@@ -42,6 +44,7 @@ jobs:
           python -m pip install twine
 
       - name: Upload wheels to PyPI
+        if: success()
         run: |
           python -m twine upload --repository testpypi wheelhouse/*.whl
         env:
@@ -73,6 +76,7 @@ jobs:
           path: ./dist/*.tar.gz
 
       - name: Upload source distribution to PyPI
+        if: success()
         run: |
           python -m twine upload --repository testpypi dist/*.tar.gz
         env:
