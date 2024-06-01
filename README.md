@@ -112,7 +112,7 @@ Where:
 2. Decode first line with standard RLE.
 3. On subsequent lines:
    - copy the previous line
-   - apply sparse RLE to the copied line
+   - apply sparse RLE to the symbols which are differ from the previous line
 
 Testing
 ---------
