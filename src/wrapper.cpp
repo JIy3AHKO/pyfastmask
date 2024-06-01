@@ -138,10 +138,10 @@ PYBIND11_MODULE(_pyfastmask, m) {
     m.doc() = "Fast mask module";
 
     m.def("write", &write_mask_to_file, "Write mask to file", py::arg("filename"), py::arg("mask"));
-    m.def("write_bytes", &write_mask_to_bytes, "Write mask to bytes", py::arg("mask"));
+    m.def("encode", &write_mask_to_bytes, "Encodes mask into buffer", py::arg("mask"));
 
     m.def("read", &read_mask_from_file, "Read mask from file", py::arg("filename"), py::return_value_policy::move);
-    m.def("read_bytes", &read_mask_from_bytes, "Read mask from bytes", py::arg("data"), py::return_value_policy::move);
+    m.def("decode", &read_mask_from_bytes, "Decodes mask from buffer", py::arg("buffer"), py::return_value_policy::move);
 
     m.def("info", &read_header_from_file, "Read mask header from file", py::arg("filename"));
 

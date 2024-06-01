@@ -110,8 +110,8 @@ class TestReadWrite(unittest.TestCase):
     def test_read_write_consistency_bytes(self):
         for name, img in self.test_params:
             with self.subTest(name=name):
-                buffer = pf.write_bytes(img)
-                r = pf.read_bytes(buffer)
+                buffer = pf.encode(img)
+                r = pf.decode(buffer)
                 np.testing.assert_array_equal(img, r, err_msg=f"Mask {name} is different after read/write to bytes.")
 
     def test_read_on_small_file_produces_error(self):
