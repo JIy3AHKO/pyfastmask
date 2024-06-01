@@ -3,6 +3,8 @@
 #include "pybind11/numpy.h"
 #include <fstream>
 #include <vector>
+#include <stdexcept>
+#include <string>
 #include "fastmask.h"
 #include "encode.h"
 #include "decode.h"
@@ -10,6 +12,29 @@
 namespace py = pybind11;
 using namespace pybind11::literals;
 
+void validate_header(const Header& header) {
+    if (header.magic != MAGIC_BYTE) {
+        throw std::invalid_argument("File is not a valid fastmask file.");
+    }
+
+    if (header.version != VERSION_BYTE) {
+        throw std::invalid_argument("This file was created with a different version of fastmask.");
+    }
+}
+
+void validate_buffer_size(size_t size) {
+    if (size < sizeof(Header)) {
+        throw std::invalid_argument("Data is not a valid fastmask file. Header is missing.");
+    }
+
+    if ((size - sizeof(Header)) % sizeof(buffer_t) != 0) {
+        throw std::invalid_argument("Data is not aligned.");
+    }
+}
+
+std::invalid_argument add_filename_to_error(const std::string& filename, std::invalid_argument& e) {
+    return std::invalid_argument("Error while reading file " + filename + ": " + e.what());
+}
 
 void write_mask_to_file(const std::string& filename, py::buffer mask) {
     py::buffer_info info = mask.request();
@@ -39,13 +64,10 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
 
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
-
-    if (size < sizeof(Header)) {
-        throw std::invalid_argument("File is not a valid fastmask file. Header is missing.");
-    }
-
-    if ((size - sizeof(Header)) % sizeof(buffer_t) != 0) {
-        throw std::invalid_argument("File is not a valid fastmask file. Data is not aligned.");
+    try {
+        validate_buffer_size(size);
+    } catch (std::invalid_argument& e) {
+        throw add_filename_to_error(filename, e);
     }
 
     std::vector<char> buffer(size);
@@ -54,13 +76,10 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
     file.close();
 
     Header header = read_header(buffer.data());
-
-    if (header.magic != MAGIC_BYTE) {
-        throw std::invalid_argument("File is not a valid fastmask file.");
-    }
-
-    if (header.version != VERSION_BYTE) {
-        throw std::invalid_argument("This file was created with a different version of fastmask.");
+    try {
+        validate_header(header);
+    } catch (std::invalid_argument& e) {
+        throw add_filename_to_error(filename, e);
     }
 
     std::vector<unsigned char> mask(header.mask_height * header.mask_width);
@@ -71,28 +90,15 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
 }
 
 
-py::array_t<unsigned char> read_mask_from_bytes(const py::buffer& data_bytes) {
+py::array_t<unsigned char> read_mask_from_buffer(const py::buffer& data_bytes) {
     py::buffer_info info = data_bytes.request();
     
     const char* buffer = static_cast<const char*>(info.ptr);
 
-    if (info.size < sizeof(Header)) {
-        throw std::invalid_argument("Data is not a valid fastmask file. Header is missing.");
-    }
-
-    if ((info.size - sizeof(Header)) % sizeof(buffer_t) != 0) {
-        throw std::invalid_argument("Data is not aligned.");
-    }
+    validate_buffer_size(info.size);
 
     Header header = read_header(buffer);
-
-    if (header.magic != MAGIC_BYTE) {
-        throw std::invalid_argument("File is not a valid fastmask file.");
-    }
-
-    if (header.version != VERSION_BYTE) {
-        throw std::invalid_argument("This file was created with a different version of fastmask.");
-    }
+    validate_header(header);
 
     std::vector<unsigned char> mask(header.mask_height * header.mask_width);
 
@@ -106,8 +112,10 @@ py::dict read_header_from_file(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
     std::streamsize size = file.tellg();
 
-    if (size < sizeof(Header)) {
-        throw std::invalid_argument("File is not a valid fastmask file. Header is missing.");
+    try {
+        validate_buffer_size(size);
+    } catch (std::invalid_argument& e) {
+        throw add_filename_to_error(filename, e);
     }
    
     file.seekg(0, std::ios::beg);
@@ -118,9 +126,10 @@ py::dict read_header_from_file(const std::string& filename) {
     file.close();
 
     Header header = read_header(buffer);
-
-    if (header.magic != MAGIC_BYTE) {
-        throw std::invalid_argument("File is not a valid fastmask file.");
+    try {
+        validate_header(header);
+    } catch (std::invalid_argument& e) {
+        throw add_filename_to_error(filename, e);
     }
 
     return py::dict(
@@ -138,10 +147,10 @@ PYBIND11_MODULE(_pyfastmask, m) {
     m.doc() = "Fast mask module";
 
     m.def("write", &write_mask_to_file, "Write mask to file", py::arg("filename"), py::arg("mask"));
-    m.def("encode", &write_mask_to_bytes, "Encodes mask into buffer", py::arg("mask"));
+    m.def("encode", &write_mask_to_bytes, "Encodes mask into bytes object", py::arg("mask"));
 
     m.def("read", &read_mask_from_file, "Read mask from file", py::arg("filename"), py::return_value_policy::move);
-    m.def("decode", &read_mask_from_bytes, "Decodes mask from buffer", py::arg("buffer"), py::return_value_policy::move);
+    m.def("decode", &read_mask_from_buffer, "Decodes mask from buffer", py::arg("buffer"), py::return_value_policy::move);
 
     m.def("info", &read_header_from_file, "Read mask header from file", py::arg("filename"));
 

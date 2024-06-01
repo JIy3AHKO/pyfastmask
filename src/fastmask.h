@@ -13,13 +13,18 @@ const uint32_t MAGIC_BYTE = (
 );
 
 
+/**
+ * @brief Represents the header structure of a FastMask file.
+ *
+ * The Header struct contains information about the file format and dimensions of the mask.
+ */
 struct Header {
-    uint32_t magic;
-    uint8_t version;
-    uint8_t symbol_bit_width;
-    uint8_t count_bit_width;
-    uint8_t line_count_bit_width;
-    uint32_t unique_symbols_count;
-    uint32_t mask_height;
-    uint32_t mask_width;
+    uint32_t magic;                 /**< The magic number of the file. */
+    uint8_t version;                /**< The version of the file format. */
+    uint8_t symbol_bit_width;       /**< The bit width of each symbol. */
+    uint8_t count_bit_width;        /**< The bit width of the symbol count. */
+    uint8_t line_count_bit_width;   /**< The bit width of the count of groups of symbols in a line. */
+    uint32_t unique_symbols_count;  /**< The number of unique symbols in the file. */
+    uint32_t mask_height;           /**< The height of the mask. */
+    uint32_t mask_width;            /**< The width of the mask. */
 };

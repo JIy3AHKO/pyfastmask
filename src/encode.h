@@ -270,8 +270,10 @@ std::vector<char> encode_mask(unsigned char * mask, const std::vector<long>& sha
         rle_lines.push_back(rle_line);
     }
 
-    // estimate the bit widths for counts and symbols
+    // get the unique symbols in the mask
     auto unique_symbols = get_unique_symbols(rle_lines);
+
+    // estimate the bit widths for counts and symbols
     uint8_t symbol_bit_width = estimate_symbol_bit_width(unique_symbols);
     uint8_t count_bit_width = estimate_count_bit_width(rle_lines);
     uint8_t line_count_bit_width = estimate_line_count_bit_width(rle_lines);
