@@ -158,3 +158,19 @@ class TestInfo(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 pf.info(f.name)
+
+
+class TestSymbolBitWidth(unittest.TestCase):
+    def test_info_for_binary_image_returns_1bits_symbol_bit_width(self):
+        mask = np.array([[0, 1], [1, 0]], dtype=np.uint8)
+        with TempFile() as f:
+            pf.write(f, mask)
+            info = pf.info(f)
+            self.assertEqual(info['symbol_bit_width'], 1)
+
+    def test_info_for_256color_image_returns_8bits_symbol_bit_width(self):
+        mask = np.arange(256, dtype=np.uint8).reshape(16, 16)
+        with TempFile() as f:
+            pf.write(f, mask)
+            info = pf.info(f)
+            self.assertEqual(info['symbol_bit_width'], 8)

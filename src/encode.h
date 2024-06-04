@@ -235,7 +235,7 @@ std::vector<uint32_t> get_unique_symbols(const std::vector<BaseRLELine*>& rle_li
 }
 
 uint8_t estimate_symbol_bit_width(const std::vector<uint32_t>& unique_symbols) {
-    return get_bit_width(unique_symbols.size());
+    return get_bit_width(unique_symbols.size() - 1);
 }
 
 
