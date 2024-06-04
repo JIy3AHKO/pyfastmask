@@ -118,7 +118,6 @@ Testing
 ---------
 To run tests, use the following command:
 ```bash
-pip install -r test-requirements.txt
 python -m unittest discover tests/
 ```
 
