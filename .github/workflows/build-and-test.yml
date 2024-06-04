@@ -24,7 +24,6 @@ jobs:
         python3 -m pip install .
     - name: Test with pytest
       run: |
-        python3 -m pip install -r test-requirements.txt
         python3 -m unittest discover tests/
 
   build-and-test-macos:
@@ -47,7 +46,6 @@ jobs:
         python3 -m pip install .
     - name: Test with pytest
       run: |
-        python3 -m pip install -r test-requirements.txt
         python3 -m unittest discover tests/
 
   build-and-test-windows:
@@ -67,5 +65,4 @@ jobs:
         python3 -m pip install .
     - name: Test with pytest
       run: |
-        python3 -m pip install -r test-requirements.txt
         python3 -m unittest discover tests/

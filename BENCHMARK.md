@@ -4,7 +4,7 @@ Benchmark
 You can run benchmark locally with:
 
 ```bash
-pip install -r test-requirements.txt
+pip install -r benchmark/requirements.txt
 python benchmark/run_benchmark.py --images-dir <dir_with_test_images> --n-iterations 1000
 ```
 
