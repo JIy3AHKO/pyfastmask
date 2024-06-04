@@ -83,8 +83,10 @@ py::array_t<unsigned char> read_mask_from_file(const std::string& filename) {
     }
 
     std::vector<unsigned char> mask(header.mask_height * header.mask_width);
-
-    decode_mask(buffer.data() + sizeof(Header), header, mask.data());
+    {
+        py::gil_scoped_release release;
+        decode_mask(buffer.data() + sizeof(Header), header, mask.data());
+    }
 
     return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask.data());
 }
@@ -101,8 +103,10 @@ py::array_t<unsigned char> read_mask_from_buffer(const py::buffer& data_bytes) {
     validate_header(header);
 
     std::vector<unsigned char> mask(header.mask_height * header.mask_width);
-
-    decode_mask(buffer + sizeof(Header), header, mask.data());
+    {
+        py::gil_scoped_release release;
+        decode_mask(buffer + sizeof(Header), header, mask.data());
+    }
 
     return py::array_t<unsigned char>({header.mask_height, header.mask_width}, mask.data());
 
@@ -153,7 +157,6 @@ PYBIND11_MODULE(_pyfastmask, m) {
     m.def("decode", &read_mask_from_buffer, "Decodes mask from buffer", py::arg("buffer"), py::return_value_policy::move);
 
     m.def("info", &read_header_from_file, "Read mask header from file", py::arg("filename"));
-
 
     py::class_<Header>(m, "Header")
         .def_readonly("symbol_bit_width", &Header::symbol_bit_width)
