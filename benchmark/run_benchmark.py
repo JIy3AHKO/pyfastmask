@@ -192,10 +192,34 @@ def get_median(data: List[Dict[str, float]], method_name: str) -> float:
     return np.median([row[method_name] for row in data])
 
 
+def update_benchmark_file(file_path: str, speed_markdown: str, size_markdown: str):
+    with open(file_path, "r") as f:
+        readme = f.read()
+
+    start_str = "Reading speed:"
+    end_str = "All measurements are averaged over 1000 iterations. The best result is highlighted in bold."
+
+    start = readme.find(start_str)
+    end = readme.find(end_str)
+
+    new_readme = [
+        readme[:start + len(start_str) + 1],
+        speed_markdown,
+        "Mask size:\n",
+        size_markdown,
+        readme[end:]
+    ]
+
+    new_readme = "\n".join(new_readme)
+
+    with open(file_path, "w") as f:
+        f.write(new_readme)
+
+
 def test_read_speed(
         images_dir: str,
         n_iterations: int = 100,
-        update_readme: bool = False,
+        update_benchmark: bool = False,
         methods: List[str] = None,
 ):
     cv2.setNumThreads(0)
@@ -238,28 +262,8 @@ def test_read_speed(
     size_markdown = draw_md_table(size_table, "KiB")
     print(size_markdown)
 
-    if update_readme:
-        with open("README.md", "r") as f:
-            readme = f.read()
-
-        start_str = "Reading speed:"
-        end_str = "All measurements are averaged over 1000 iterations. The best result is highlighted in bold."
-
-        start = readme.find(start_str)
-        end = readme.find(end_str)
-
-        new_readme = [
-            readme[:start + len(start_str) + 1],
-            speed_markdown,
-            "Mask size:\n",
-            size_markdown,
-            readme[end:]
-        ]
-
-        new_readme = "\n".join(new_readme)
-
-        with open("README.md", "w") as f:
-            f.write(new_readme)
+    if update_benchmark:
+        update_benchmark_file('BENCHMARK.md', speed_markdown, size_markdown)
 
 
 if __name__ == "__main__":
@@ -267,7 +271,7 @@ if __name__ == "__main__":
     parser.add_argument("--images-dir", type=str, required=True)
     parser.add_argument("--n-iterations", type=int, default=100)
     parser.add_argument("--methods", type=str, nargs="+", default=None)
-    parser.add_argument("--update-readme", action="store_true")
+    parser.add_argument("--update-benchmark", action="store_true")
     args = parser.parse_args()
 
-    test_read_speed(args.images_dir, args.n_iterations, args.update_readme, args.methods)
+    test_read_speed(args.images_dir, args.n_iterations, args.update_benchmark, args.methods)
