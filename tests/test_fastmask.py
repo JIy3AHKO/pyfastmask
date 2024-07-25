@@ -178,6 +178,22 @@ class TestInfo(unittest.TestCase):
             info = pf.info(path)
             self.assertEqual(info['shape'], (256, 128))
 
+    def test_info_buffer_returns_correct_shape(self):
+        mask = np.random.randint(0, 256, (12, 34), dtype=np.uint8)
+
+        encoded = pf.encode(mask)
+        info = pf.info_bytes(encoded)
+
+        self.assertEqual(info['shape'], (12, 34))
+
+    def test_info_buffer_small_buffer_produces_error(self):
+        with self.assertRaises(ValueError):
+            pf.info_bytes(b'0')
+
+    def test_info_buffer_wrong_magic_bytes_produces_error(self):
+        with self.assertRaises(ValueError):
+            pf.info_bytes(b'0123456789ancdefghigklmnop')
+
 
 class TestSymbolBitWidth(unittest.TestCase):
     def test_info_for_binary_image_returns_1bits_symbol_bit_width(self):
@@ -193,3 +209,29 @@ class TestSymbolBitWidth(unittest.TestCase):
             pf.write(f, mask)
             info = pf.info(f)
             self.assertEqual(info['symbol_bit_width'], 8)
+
+
+class TestGetShape(unittest.TestCase):
+    def test_get_shape_returns_correct_shape_for_str(self):
+        mask = np.random.randint(0, 256, (256, 128), dtype=np.uint8)
+        with TempFile() as f:
+            pf.write(f, mask)
+            shape = pf.get_shape(f)
+
+        self.assertEqual(shape, (256, 128))
+
+    def test_get_shape_returns_correct_shape_for_pathlib(self):
+        mask = np.random.randint(0, 256, (256, 128), dtype=np.uint8)
+        with TempFile() as f:
+            f = pathlib.Path(f)
+            pf.write(f, mask)
+            shape = pf.get_shape(f)
+
+        self.assertEqual(shape, (256, 128))
+
+    def test_get_shape_returns_correct_shape_for_bytes(self):
+        mask = np.random.randint(0, 256, (256, 128), dtype=np.uint8)
+        encoded = pf.encode(mask)
+        shape = pf.get_shape(encoded)
+
+        self.assertEqual(shape, (256, 128))

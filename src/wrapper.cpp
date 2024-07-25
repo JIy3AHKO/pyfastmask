@@ -144,6 +144,27 @@ py::dict read_header_from_file(const std::string& filename) {
         "shape"_a = py::make_tuple(header.mask_height, header.mask_width)
     );
 }
+
+
+
+py::dict read_header_from_buffer(const py::buffer& data_bytes) {
+    py::buffer_info info = data_bytes.request();
+
+    const char* buffer = static_cast<const char*>(info.ptr);
+
+    validate_buffer_size(info.size);
+
+    Header header = read_header(buffer);
+    validate_header(header);
+
+    return py::dict(
+        "symbol_bit_width"_a = header.symbol_bit_width,
+        "count_bit_width"_a = header.count_bit_width,
+        "unique_symbols_count"_a = header.unique_symbols_count,
+        "line_count_bit_width"_a = header.line_count_bit_width,
+        "shape"_a = py::make_tuple(header.mask_height, header.mask_width)
+    );
+}
     
 
 
@@ -157,6 +178,7 @@ PYBIND11_MODULE(_pyfastmask, m) {
     m.def("decode", &read_mask_from_buffer, "Decodes mask from buffer", py::arg("buffer"), py::return_value_policy::move);
 
     m.def("info", &read_header_from_file, "Read mask header from file", py::arg("filename"));
+    m.def("info_buffer", &read_header_from_buffer, "Read mask header from buffer", py::arg("buffer"));
 
     py::class_<Header>(m, "Header")
         .def_readonly("symbol_bit_width", &Header::symbol_bit_width)

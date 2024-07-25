@@ -1,5 +1,5 @@
 import pathlib
-from typing import Dict, Union
+from typing import Dict, Tuple, Union
 
 import numpy as _np
 
@@ -26,7 +26,7 @@ def read(path: Union[str, pathlib.Path]) -> _np.ndarray:
     Read pfm file and return mask as numpy array.
 
     Args:
-        path: (str, pathlib.Path) Path to pfm file.
+        path: (Union[str, pathlib.Path]) Path to pfm file.
 
     Returns:
         mask: (np.ndarray) Mask as numpy array.
@@ -61,7 +61,7 @@ def write(path: Union[str, pathlib.Path], mask: _np.ndarray) -> None:
     Mask must be numpy array with shape (W, H) or (W, H, 1) and dtype np.uint8.
 
     Args:
-        path: (str) Path to save pfm file.
+        path: (Union[str, pathlib.Path]) Path to save pfm file.
         mask: (np.ndarray) Mask to save.
 
     Examples:
@@ -95,7 +95,7 @@ def encode(mask: _np.ndarray) -> bytes:
     return _pyfastmask.encode(mask)
 
 
-def info(path: Union[str, pathlib.Path]) -> Dict[str, int]:
+def info(path: Union[str, pathlib.Path, bytes]) -> Dict[str, Union[int, Tuple[int, int]]]:
     """
     Get info of pfm file.
 
@@ -107,10 +107,47 @@ def info(path: Union[str, pathlib.Path]) -> Dict[str, int]:
     - symbol_bit_width: (int) Number of bits used to represent symbol value.
 
     Args:
-        path: (str) Path to pfm file.
+        path: (Union[str, pathlib.Path]) Path to pfm file.
 
     Returns:
         info: (Dict[str, int]) Dictionary with file info.
     """
     path = str(path)
     return _pyfastmask.info(path)
+
+
+def info_bytes(encoded_pfm: bytes) -> Dict[str, Union[int, Tuple[int, int]]]:
+    """
+    Get info of encoded pfm file.
+
+    See :func: `pyfastmask.info` for header description.
+
+    Args:
+        encoded_pfm: (bytes) encoded pfm file.
+
+    Returns:
+        info: (Dict[str, int]) Dictionary with file info.
+    """
+
+    return _pyfastmask.info_buffer(encoded_pfm)
+
+
+def get_shape(pfm: Union[str, pathlib.Path, bytes]) -> Tuple[int, int]:
+    """
+    Get shape of pfm file.
+
+    Convenient function to get shape from pfm file given as a path on disk or an encoded buffer.
+    Args:
+        pfm: (Union[str, pathlib.Path, bytes]) pfm file. In case of bytes, it is treated as encoded data; otherwise it's
+            treated as path.
+
+    Returns:
+        shape: (int, int) shape of an image in pfm file.
+    """
+
+    if isinstance(pfm, bytes):
+        info_data = info_bytes(pfm)
+    else:
+        info_data = info(pfm)
+
+    return info_data['shape']
