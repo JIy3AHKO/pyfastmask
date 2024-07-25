@@ -1,4 +1,6 @@
-from typing import Dict
+import pathlib
+from typing import Dict, Union
+
 import numpy as _np
 
 import _pyfastmask
@@ -19,18 +21,19 @@ def _validate_mask_and_prepare(mask: _np.ndarray) -> _np.ndarray:
     return mask
 
 
-def read(path: str) -> _np.ndarray:
+def read(path: Union[str, pathlib.Path]) -> _np.ndarray:
     """
     Read pfm file and return mask as numpy array.
 
     Args:
-        path: (str) Path to pfm file.
+        path: (str, pathlib.Path) Path to pfm file.
 
     Returns:
         mask: (np.ndarray) Mask as numpy array.
     Examples:
         >>> mask = read("path/to/mask.pfm")
     """
+    path = str(path)
     return _pyfastmask.read(path)
 
 
@@ -51,7 +54,7 @@ def decode(buffer: bytes) -> _np.ndarray:
     return _pyfastmask.decode(buffer)
 
 
-def write(path: str, mask: _np.ndarray) -> None:
+def write(path: Union[str, pathlib.Path], mask: _np.ndarray) -> None:
     """
     Write mask to pfm file.
 
@@ -65,6 +68,7 @@ def write(path: str, mask: _np.ndarray) -> None:
         >>> mask = np.random.randint(0, 256, (100, 100), dtype=np.uint8)
         >>> write("path/to/mask.pfm", mask)
     """
+    path = str(path)
     mask = _validate_mask_and_prepare(mask)
     _pyfastmask.write(path, mask)
 
@@ -91,7 +95,7 @@ def encode(mask: _np.ndarray) -> bytes:
     return _pyfastmask.encode(mask)
 
 
-def info(path: str) -> Dict[str, int]:
+def info(path: Union[str, pathlib.Path]) -> Dict[str, int]:
     """
     Get info of pfm file.
 
@@ -108,4 +112,5 @@ def info(path: str) -> Dict[str, int]:
     Returns:
         info: (Dict[str, int]) Dictionary with file info.
     """
+    path = str(path)
     return _pyfastmask.info(path)

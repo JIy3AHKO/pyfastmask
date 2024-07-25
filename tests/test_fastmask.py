@@ -2,6 +2,7 @@ import unittest
 import os
 import numpy as np
 import tempfile
+import pathlib
 
 import pyfastmask as pf
 
@@ -135,6 +136,16 @@ class TestReadWrite(unittest.TestCase):
             with self.assertRaises(ValueError):
                 pf.read(f.name)
 
+    def test_write_read_pathlib_path_argument_successful(self):
+        mask = np.random.randint(0, 256, (33, 44), dtype=np.uint8)
+
+        with TempFile() as f:
+            path = pathlib.Path(f)
+            pf.write(path, mask)
+            mask_after = pf.read(path)
+
+        np.testing.assert_allclose(mask, mask_after)
+
 
 class TestInfo(unittest.TestCase):
     def test_magic_bytes(self):
@@ -158,6 +169,14 @@ class TestInfo(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 pf.info(f.name)
+
+    def test_info_pathlib_path_successful(self):
+        mask = np.random.randint(0, 256, (256, 128), dtype=np.uint8)
+        with TempFile() as f:
+            path = pathlib.Path(f)
+            pf.write(path, mask)
+            info = pf.info(path)
+            self.assertEqual(info['shape'], (256, 128))
 
 
 class TestSymbolBitWidth(unittest.TestCase):
